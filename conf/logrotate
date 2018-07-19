@@ -1,0 +1,28 @@
+# sudo cp burgundy_logrotate /var/etc/logrotate.d
+# need set /opt/burgundy dir permission : chmod 755 /opt/burgundy
+# for test : 1. sudo /usr/sbin/logrotate -v /etc/logrotate.d/burgundy_logrotate
+#            2. sudo vi /var/lib/logrotate/logrotate.status
+#            3. change date
+#            4. sudo /usr/sbin/logrotate -v /etc/logrotate.d/burgundy_logrotate
+# force execute logrotate : sudo /usr/sbin/logrotate -vf /etc/logrotate.d/burgundy_logrotate
+# Logrotate file for burgundy
+
+/var/log/burgundy.log 
+/opt/burgundy/burgundy-api.log
+{
+        missingok
+        compress
+        notifempty
+        daily
+        rotate 30
+        copytruncate
+        dateext
+        postrotate
+            mkdir /var/log/burgundy_logs
+            mkdir /opt/burgundy/burgundy_logs
+            mv /var/log/burgundy.log-*.gz /var/log/burgundy_logs
+            mv /opt/burgundy/burgundy-api.log-*.gz /opt/burgundy/burgundy_logs
+            find /var/log/burgundy_logs -mtime +30 -name "*.gz" -type f -exec rm -f {} \;
+            find /opt/burgundy/burgundy_logs -mtime +30 -name "*.gz" -type f -exec rm -f {} \;
+        endscript 
+}
