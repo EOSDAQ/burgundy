@@ -1,13 +1,13 @@
 package eosdaq
 
 import (
-	eos "github.com/eoscanada/eos-go"
+	"burgundy/util"
+
+	"go.uber.org/zap"
 )
 
-func init() {
-	eos.RegisterAction(AN("eosio"), ActN("verify"), Verify{})
-}
+var mlog *zap.SugaredLogger
 
-var AN = eos.AN
-var PN = eos.PN
-var ActN = eos.ActN
+func init() {
+	mlog, _ = util.InitLog("eosdaq", "console")
+}
