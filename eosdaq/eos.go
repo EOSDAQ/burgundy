@@ -15,6 +15,7 @@ var ActN = eos.ActN
 
 func init() {
 	eos.RegisterAction(AN("eosio"), ActN("verify"), Verify{})
+	eos.RegisterAction(AN("eosio"), ActN("deletetransx"), Transx{})
 }
 
 type eosNet struct {
