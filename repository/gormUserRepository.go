@@ -20,7 +20,7 @@ func NewGormUserRepository(Conn *gorm.DB) UserRepository {
 
 func (g *gormUserRepository) GetByID(ctx context.Context, accountName string) (user *models.User, err error) {
 	user = &models.User{}
-	scope := g.Conn.Where("user_id = ?", id).First(&user)
+	scope := g.Conn.Where("account_name = ?", accountName).First(&user)
 	if scope.Error != nil {
 		return nil, scope.Error
 	}
@@ -44,12 +44,12 @@ func (g *gormUserRepository) Update(ctx context.Context, user *models.User) (u *
 func (g *gormUserRepository) Store(ctx context.Context, user *models.User) (*models.User, error) {
 	scope := g.Conn.Where("account_name = ?", user.AccountName).FirstOrCreate(user)
 	if err := scope.Error; err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if scope.RowsAffected == 0 {
 		if err := g.Conn.Create(user).Error; err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
