@@ -61,8 +61,8 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
 		UserService: us,
 	}
 
-	// /api/v1/user
+	// /api/v1/acct/user
+	eg.POST("", handler.CreateUser)
 	eg.GET("/:accountName", handler.GetUser)
-	eg.POST("/", handler.CreateUser)
 	eg.DELETE("/:accountName", handler.DeleteUser)
 }

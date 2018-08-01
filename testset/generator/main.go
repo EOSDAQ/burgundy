@@ -63,8 +63,15 @@ func main() {
 		JSON:  true,
 	})
 
+	fmt.Printf("out value [%v]\n", out)
+	/*
+		var daqRes []*eosdaq.EosdaqTx
+		out.BinaryToStructs(&daqRes)
+		fmt.Printf("res value [%v]\n", daqRes)
+	*/
 	data, _ := json.Marshal(out)
-	fmt.Println(string(data))
+	fmt.Printf("data value [%s]\n", string(data))
+
 	/*
 		actionResp, err := api.SignPushActions(
 
