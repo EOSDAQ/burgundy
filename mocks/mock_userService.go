@@ -2,13 +2,14 @@
 // Source: service/userService.go
 
 // Package mock_service is a generated GoMock package.
-package mock_service
+package mocks
 
 import (
 	models "burgundy/models"
 	context "context"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockUserService is a mock of UserService interface

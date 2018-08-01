@@ -1,7 +1,7 @@
 package eosdaq
 
 import (
-	"github.com/eoscanada/eos-go"
+	eos "github.com/eoscanada/eos-go"
 )
 
 func init() {

@@ -2,13 +2,14 @@
 // Source: repository/Repository.go
 
 // Package mock_repository is a generated GoMock package.
-package mock_repository
+package mocks
 
 import (
 	models "burgundy/models"
 	context "context"
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockUserRepository is a mock of UserRepository interface

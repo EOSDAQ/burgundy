@@ -1,12 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/eoscanada/eos-go"
+	eos "github.com/eoscanada/eos-go"
 	"github.com/spf13/viper"
 )
 
@@ -35,9 +36,11 @@ func main() {
 
 	v := readConf(map[string]interface{}{
 		"eosport": 18888,
+		"chainID": "cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f",
 	})
 
-	api := eos.New(fmt.Sprintf("http://localhost:%d", v.GetInt("eosport")))
+	cid, _ := hex.DecodeString(v.GetString("chainID"))
+	api := eos.New(fmt.Sprintf("http://10.168.0.103:%d", v.GetInt("eosport")), cid)
 
 	//api.Debug = true
 	//eos.Debug = true
@@ -56,7 +59,7 @@ func main() {
 	out, _ := api.GetTableRows(eos.GetTableRowsRequest{
 		Scope: "eosdaq",
 		Code:  "eosdaq",
-		Table: "bidmatch",
+		Table: "tx",
 		JSON:  true,
 	})
 
