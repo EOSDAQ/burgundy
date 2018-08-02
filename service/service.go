@@ -13,7 +13,9 @@
 package service
 
 import (
+	"burgundy/models"
 	"burgundy/util"
+	"context"
 
 	"go.uber.org/zap"
 )
@@ -22,4 +24,11 @@ var mlog *zap.SugaredLogger
 
 func init() {
 	mlog, _ = util.InitLog("service", "console")
+}
+
+// UserService ...
+type UserService interface {
+	GetByID(ctx context.Context, accountName string) (*models.User, error)
+	Store(ctx context.Context, user *models.User) (*models.User, error)
+	Delete(ctx context.Context, accountName string) (bool, error)
 }

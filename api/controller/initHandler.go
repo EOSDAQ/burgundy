@@ -10,6 +10,7 @@ import (
 	"burgundy/util"
 
 	"github.com/jinzhu/gorm"
+	"github.com/juju/errors"
 	"github.com/labstack/echo"
 	"go.uber.org/zap"
 )
@@ -45,7 +46,10 @@ func InitHandler(burgundy conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err erro
 	user := sys.Group("/user")
 
 	userRepo := _Repo.NewGormUserRepository(db)
-	userSvc := service.NewUserService(userRepo, timeout)
+	userSvc, err := service.NewUserService(burgundy, userRepo, timeout)
+	if err != nil {
+		return errors.Annotatef(err, "InitHandler")
+	}
 	newUserHTTPHandler(user, userSvc)
 
 	return nil

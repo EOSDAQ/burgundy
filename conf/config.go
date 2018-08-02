@@ -25,6 +25,7 @@ type DefaultConf struct {
 
 	ConfEOSHOST           string
 	ConfEOSPORT           int
+	ConfEOSContract       string
 	ConfEOSCrawDurationMS int
 
 	ConfDBHOST string
@@ -44,6 +45,7 @@ var defaultConf = DefaultConf{
 	ConfAPILOGLEVEL:       "debug",
 	ConfEOSHOST:           "http://10.100.100.2",
 	ConfEOSPORT:           18888,
+	ConfEOSContract:       "eosdaq",
 	ConfEOSCrawDurationMS: 500,
 	ConfDBHOST:            "www.db4free.net",
 	ConfDBPORT:            3306,
@@ -77,20 +79,21 @@ func init() {
 
 	var err error
 	Burgundy, err = readConfig(map[string]interface{}{
-		"port":        defaultConf.ConfServerPORT,
-		"timeout":     defaultConf.ConfServerTIMEOUT,
-		"logmode":     defaultConf.ConfServerLOGMODE,
-		"loglevel":    defaultConf.ConfAPILOGLEVEL,
-		"profile":     false,
-		"profilePort": 6060,
-		"eos_host":    defaultConf.ConfEOSHOST,
-		"eos_port":    defaultConf.ConfEOSPORT,
-		"eos_crawl":   defaultConf.ConfEOSCrawDurationMS,
-		"db_host":     defaultConf.ConfDBHOST,
-		"db_port":     defaultConf.ConfDBPORT,
-		"db_user":     defaultConf.ConfDBUSER,
-		"db_pass":     defaultConf.ConfDBPASS,
-		"db_name":     defaultConf.ConfDBNAME,
+		"port":         defaultConf.ConfServerPORT,
+		"timeout":      defaultConf.ConfServerTIMEOUT,
+		"logmode":      defaultConf.ConfServerLOGMODE,
+		"loglevel":     defaultConf.ConfAPILOGLEVEL,
+		"profile":      false,
+		"profilePort":  6060,
+		"eos_host":     defaultConf.ConfEOSHOST,
+		"eos_port":     defaultConf.ConfEOSPORT,
+		"eos_contract": defaultConf.ConfEOSContract,
+		"eos_crawl":    defaultConf.ConfEOSCrawDurationMS,
+		"db_host":      defaultConf.ConfDBHOST,
+		"db_port":      defaultConf.ConfDBPORT,
+		"db_user":      defaultConf.ConfDBUSER,
+		"db_pass":      defaultConf.ConfDBPASS,
+		"db_name":      defaultConf.ConfDBNAME,
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)

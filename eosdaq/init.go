@@ -13,15 +13,26 @@ import (
 var mlog *zap.SugaredLogger
 var timer *eosTimer
 
+type EosNet struct {
+	host     string
+	port     int
+	contract string
+}
+
 func init() {
 	mlog, _ = util.InitLog("eosdaq", "console")
 }
 
+func NewEosnet(host string, port int, contract string) *EosNet {
+	return &EosNet{host, port, contract}
+}
+
 func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal) error {
 
-	eosnet := &eosNet{
-		host: burgundy.GetString("eos_host"),
-		port: burgundy.GetInt("eos_port"),
+	eosnet := &EosNet{
+		host:     burgundy.GetString("eos_host"),
+		port:     burgundy.GetInt("eos_port"),
+		contract: burgundy.GetString("eos_contract"),
 	}
 
 	api, err := NewAPI(eosnet, burgundy.GetStringSlice("key"))
