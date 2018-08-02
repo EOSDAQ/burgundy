@@ -8,7 +8,7 @@ import (
 func SyncVerify(contract eos.AccountName) *eos.Action {
 	return &eos.Action{
 		Account: contract,
-		Name:    ActN("verify"),
+		Name:    ActN("validate"),
 		Authorization: []eos.PermissionLevel{
 			{Actor: contract, Permission: PN("active")},
 		},

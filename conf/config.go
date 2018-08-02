@@ -25,7 +25,6 @@ type DefaultConf struct {
 
 	ConfEOSHOST           string
 	ConfEOSPORT           int
-	ConfEOSChainID        string
 	ConfEOSCrawDurationMS int
 
 	ConfDBHOST string
@@ -45,7 +44,6 @@ var defaultConf = DefaultConf{
 	ConfAPILOGLEVEL:       "debug",
 	ConfEOSHOST:           "http://10.100.100.2",
 	ConfEOSPORT:           18888,
-	ConfEOSChainID:        "cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f",
 	ConfEOSCrawDurationMS: 500,
 	ConfDBHOST:            "www.db4free.net",
 	ConfDBPORT:            3306,
@@ -67,7 +65,7 @@ func init() {
 	pflag.IntP("port", "p", defaultConf.ConfServerPORT, "burgundy Port")
 	pflag.IntP("timeout", "t", defaultConf.ConfServerTIMEOUT, "burgundy Context timeout(sec)")
 
-	pflag.String("key", "5HtZU5SArLEK3WDNntrK9fRCU8GFm9Ga4EAt9omGuYwiiFxMRyd", "EOSDAQ Private key")
+	pflag.String("key", "eosdaq contract private key", "EOSDAQ Private key")
 
 	pflag.String("db_host", defaultConf.ConfDBHOST, "burgundy's DB host")
 	pflag.Int("db_port", defaultConf.ConfDBPORT, "burgundy's DB port")
@@ -87,7 +85,6 @@ func init() {
 		"profilePort": 6060,
 		"eos_host":    defaultConf.ConfEOSHOST,
 		"eos_port":    defaultConf.ConfEOSPORT,
-		"eos_chain":   defaultConf.ConfEOSChainID,
 		"eos_crawl":   defaultConf.ConfEOSCrawDurationMS,
 		"db_host":     defaultConf.ConfDBHOST,
 		"db_port":     defaultConf.ConfDBPORT,

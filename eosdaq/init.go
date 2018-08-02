@@ -20,9 +20,8 @@ func init() {
 func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal) error {
 
 	eosnet := &eosNet{
-		host:    burgundy.GetString("eos_host"),
-		port:    burgundy.GetInt("eos_port"),
-		chainID: burgundy.GetString("eos_chain"),
+		host: burgundy.GetString("eos_host"),
+		port: burgundy.GetInt("eos_port"),
 	}
 
 	api, err := NewAPI(eosnet, burgundy.GetStringSlice("key"))

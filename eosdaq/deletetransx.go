@@ -14,14 +14,14 @@ func DeleteTransaction(contract eos.AccountName, begin, end int) *eos.Action {
 		},
 		ActionData: eos.NewActionData(Transx{ //`["eosdaq",0,0]`),
 			Contract: contract,
-			Begin:    begin,
-			End:      end,
+			Begin:    uint64(begin),
+			End:      uint64(end),
 		}),
 	}
 }
 
 type Transx struct {
 	Contract eos.AccountName `json:"name"`
-	Begin    int             `json:"baseId"`
-	End      int             `json:"endId"`
+	Begin    uint64          `json:"baseId"`
+	End      uint64          `json:"endId"`
 }
