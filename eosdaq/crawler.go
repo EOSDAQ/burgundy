@@ -1,7 +1,6 @@
 package eosdaq
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -44,7 +43,7 @@ func (c *Crawler) Stop() {
 }
 
 func (c *Crawler) Do() {
-	//var res []*EosdaqTx
+	var res []EosdaqTx
 	out := &eos.GetTableRowsResp{More: true}
 	for out.More {
 		out, _ = c.api.GetTableRows(eos.GetTableRowsRequest{
@@ -53,9 +52,23 @@ func (c *Crawler) Do() {
 			Table: "tx",
 			JSON:  true,
 		})
-		//out.BinaryToStructs(&res)
-		//fmt.Printf("tx value [%v]\n", res)
-		data, _ := json.Marshal(out)
-		fmt.Printf("row [%s]\n", string(data))
+		out.JSONToStructs(&res)
+		for _, r := range res {
+			fmt.Printf("tx value [%v]\n", r)
+		}
+		if len(res) > 0 {
+			begin, end := res[0].ID, res[len(res)-1].ID
+			fmt.Printf("delete tx from[%d] to[%d]\n", begin, end)
+			resp, err := c.api.SignPushActions(
+				DeleteTransaction(eos.AccountName("eosdaq"), begin, end),
+			)
+			if err != nil {
+				fmt.Println("ERROR calling : ", err)
+			} else {
+				fmt.Println("RESP : ", resp)
+			}
+		}
+		//data, _ := json.Marshal(out)
+		//fmt.Printf("row [%s]\n", string(data))
 	}
 }

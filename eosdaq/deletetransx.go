@@ -12,7 +12,7 @@ func DeleteTransaction(contract eos.AccountName, begin, end int) *eos.Action {
 		Authorization: []eos.PermissionLevel{
 			{Actor: contract, Permission: PN("active")},
 		},
-		ActionData: eos.NewActionData(Transx{
+		ActionData: eos.NewActionData(Transx{ //`["eosdaq",0,0]`),
 			Contract: contract,
 			Begin:    begin,
 			End:      end,

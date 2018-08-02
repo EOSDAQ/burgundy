@@ -3,6 +3,7 @@ package eosdaq
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"time"
 
 	eos "github.com/eoscanada/eos-go"
@@ -40,7 +41,28 @@ type EosdaqTx struct {
 	MakerAsset string    `json:"maker_asset"`
 	Taker      string    `json:"taker"`
 	TakerAsset string    `json:"taker_asset"`
-	OrderTime  time.Time `json:"ordertime"`
+	OrderTime  Timestamp `json:"ordertime"`
+}
+type Timestamp struct {
+	time.Time
+}
+
+func (t *Timestamp) MarshalJSON() ([]byte, error) {
+	ts := t.Time.Unix()
+	stamp := fmt.Sprint(ts)
+
+	return []byte(stamp), nil
+}
+
+func (t *Timestamp) UnmarshalJSON(b []byte) error {
+	ts, err := strconv.Atoi(string(b))
+	if err != nil {
+		return err
+	}
+
+	t.Time = time.Unix(int64(ts), 0)
+
+	return nil
 }
 
 func NewAPI(eosnet *eosNet, keys []string) (*eos.API, error) {
