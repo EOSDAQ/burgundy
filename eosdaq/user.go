@@ -22,11 +22,13 @@ func action(contract, account, action string) *eos.Action {
 			{Actor: eContract, Permission: PN("active")},
 		},
 		ActionData: eos.NewActionData(EosdaqAction{
-			Account: eos.AccountName(account),
+			Contract: eContract,
+			Account:  eos.AccountName(account),
 		}),
 	}
 }
 
 type EosdaqAction struct {
-	Account eos.AccountName `json:"name"`
+	Contract eos.AccountName `json:"owner"`
+	Account  eos.AccountName `json:"name"`
 }
