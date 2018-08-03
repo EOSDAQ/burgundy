@@ -51,17 +51,20 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 
 	if err = uuc.eosAPI.RegisterUser(user.AccountName); err != nil {
 		mlog.Infow("userUsecase register error", "user", user, "err", err)
-		return nil, errors.Annotatef(err, "user[%v]", user)
+		// To pass Already Exist
 	}
 
 	u, err = uuc.userRepo.Store(innerCtx, user)
 	if err != nil {
-		mlog.Infow("userUsecase Store error", "user", user, "err", err)
-		rbErr := uuc.eosAPI.UnregisterUser(user.AccountName)
-		if rbErr != nil {
-			mlog.Infow("userUsecase register rollback error", "user", user, "err", rbErr)
-		}
-		return nil, errors.Annotatef(err, "user[%v]", user)
+		// To pass Already Exist
+		/*
+			mlog.Infow("userUsecase Store error", "user", user, "err", err)
+			rbErr := uuc.eosAPI.UnregisterUser(user.AccountName)
+			if rbErr != nil {
+				mlog.Infow("userUsecase register rollback error", "user", user, "err", rbErr)
+			}
+			return nil, errors.Annotatef(err, "user[%v]", user)
+		*/
 	}
 
 	return
@@ -72,5 +75,20 @@ func (uuc userUsecase) Delete(ctx context.Context, accountName string) (result b
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
 
-	return uuc.userRepo.Delete(innerCtx, accountName)
+	var eoserr, dberr error
+	if err = uuc.eosAPI.UnregisterUser(accountName); err != nil {
+		mlog.Infow("userUsecase unregister error", "user", accountName, "err", err)
+		eoserr = errors.Annotatef(err, "user[%s]", accountName)
+	}
+
+	result, err = uuc.userRepo.Delete(innerCtx, accountName)
+	if err != nil {
+		dberr = errors.Annotatef(err, "user[%s]", accountName)
+	}
+
+	if eoserr != nil && dberr != nil {
+		result = false
+	}
+
+	return result, dberr
 }

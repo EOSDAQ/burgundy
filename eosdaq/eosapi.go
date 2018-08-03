@@ -105,33 +105,29 @@ func (e *EosdaqAPI) CrawlData() {
 		if len(res) > 0 {
 			begin, end := res[0].ID, res[len(res)-1].ID
 			fmt.Printf("delete tx from[%d] to[%d]\n", begin, end)
-			e.Debug = true
-			resp, err := e.SignPushActions(
+			e.call(
 				DeleteTransaction(eos.AccountName("eosdaq"), begin, end),
-				//SyncVerify(eos.AccountName("eosdaq")),
 			)
-			e.Debug = false
-			if err != nil {
-				fmt.Println("ERROR calling : ", err)
-			} else {
-				fmt.Println("RESP : ", resp)
-			}
 		}
-		//data, _ := json.Marshal(out)
-		//fmt.Printf("row [%s]\n", string(data))
 	}
 }
 
 func (e *EosdaqAPI) RegisterUser(account string) error {
-	e.SignPushActions(
-		RegisterAction(eos.AccountName(account)),
-	)
-	return nil
+	return e.call(RegisterAction(e.eoscontract, account))
 }
 
 func (e *EosdaqAPI) UnregisterUser(account string) error {
-	e.SignPushActions(
-		UnregisterAction(eos.AccountName(account)),
-	)
-	return nil
+	return e.call(UnregisterAction(e.eoscontract, account))
+}
+
+func (e *EosdaqAPI) call(action *eos.Action) error {
+	e.Debug = true
+	resp, err := e.SignPushActions(action)
+	e.Debug = false
+	if err != nil {
+		mlog.Infow("ERROR calling : ", "err", err)
+	} else {
+		mlog.Infow("RESP : ", "resp", resp)
+	}
+	return err
 }

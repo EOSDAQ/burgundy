@@ -5,27 +5,28 @@ import (
 )
 
 // RegisterAction ... push action eosdaq enroll '[ "eosdaq" ]' -p eosdaq@active
-func RegisterAction(contract eos.AccountName) *eos.Action {
-	return action(contract, "enroll")
+func RegisterAction(contract, account string) *eos.Action {
+	return action(contract, account, "enroll")
 }
 
-func UnregisterAction(contract eos.AccountName) *eos.Action {
-	return action(contract, "drop")
+func UnregisterAction(contract, account string) *eos.Action {
+	return action(contract, account, "drop")
 }
 
-func action(contract eos.AccountName, action string) *eos.Action {
+func action(contract, account, action string) *eos.Action {
+	eContract := eos.AccountName(contract)
 	return &eos.Action{
-		Account: contract,
+		Account: eContract,
 		Name:    ActN(action),
 		Authorization: []eos.PermissionLevel{
-			{Actor: contract, Permission: PN("active")},
+			{Actor: eContract, Permission: PN("active")},
 		},
 		ActionData: eos.NewActionData(EosdaqAction{
-			Contract: contract,
+			Account: eos.AccountName(account),
 		}),
 	}
 }
 
 type EosdaqAction struct {
-	Contract eos.AccountName `json:"contract"`
+	Account eos.AccountName `json:"name"`
 }

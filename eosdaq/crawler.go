@@ -1,10 +1,5 @@
 package eosdaq
 
-import (
-	"fmt"
-	"time"
-)
-
 type Crawler struct {
 	receiver chan struct{}
 	api      *EosdaqAPI
@@ -24,7 +19,7 @@ func (c *Crawler) makeEventHandler() {
 		for {
 			select {
 			case <-innerCrawl.receiver:
-				fmt.Println("event!", time.Now())
+				//fmt.Println("event!", time.Now())
 				innerCrawl.Do()
 			}
 		}
