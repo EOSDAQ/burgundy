@@ -8,9 +8,12 @@ import (
 
 // User ...
 type User struct {
-	gorm.Model  `json:"-"`
-	AccountName string `json:"account_name"`
-	Email       string `json:"email"`
+	gorm.Model   `json:"-"`
+	AccountName  string `json:"account_name"`
+	Email        string `json:"email"`
+	ConfirmEmail bool   `json:"confirm_email"`
+	ConfirmOTP   bool   `json:"confirm_otp"`
+	EOSPubkey    string `json:"eos_pubkey"`
 }
 
 func (u *User) String() string {

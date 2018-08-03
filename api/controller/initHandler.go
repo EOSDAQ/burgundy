@@ -18,10 +18,10 @@ import (
 type (
 	// BurgundyStatus for common response status
 	BurgundyStatus struct {
-		TRID       string `json:"trID"`
-		ResultCode string `json:"resultCode"`
-		ResultMsg  string `json:"resultMsg"`
-		ResultData string `json:"resultData"`
+		TRID       string      `json:"trID"`
+		ResultCode string      `json:"resultCode"`
+		ResultMsg  string      `json:"resultMsg"`
+		ResultData interface{} `json:"resultData"`
 	}
 )
 
@@ -67,6 +67,7 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
 
 	// /api/v1/acct/user
 	eg.POST("", handler.CreateUser)
+	eg.PUT("/:accountName", handler.UpdateUser)
 	eg.GET("/:accountName", handler.GetUser)
 	eg.DELETE("/:accountName", handler.DeleteUser)
 }
