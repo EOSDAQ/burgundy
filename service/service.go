@@ -30,5 +30,6 @@ func init() {
 type UserService interface {
 	GetByID(ctx context.Context, accountName string) (*models.User, error)
 	Store(ctx context.Context, user *models.User) (*models.User, error)
+	Update(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
 }

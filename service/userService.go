@@ -70,6 +70,14 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 	return
 }
 
+// Update ...
+func (uuc userUsecase) Update(ctx context.Context, user *models.User) (u *models.User, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	return uuc.userRepo.Update(innerCtx, user)
+}
+
 // Delete ...
 func (uuc userUsecase) Delete(ctx context.Context, accountName string) (result bool, err error) {
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
