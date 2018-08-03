@@ -61,6 +61,7 @@ func main() {
 	f := apiLogFile("./burgundy-api.log")
 	defer f.Close()
 	e := echoInit(Burgundy, f)
+	sc := sigInit(e)
 
 	// Prepare Server
 	db := _Repo.InitDB(Burgundy)
@@ -70,6 +71,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	if !prepareServer(Burgundy, sc) {
+		os.Exit(1)
+	}
 	startServer(Burgundy, e)
 }
 
@@ -110,8 +114,6 @@ func echoInit(burgundy conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
 	e.Logger.SetOutput(bufio.NewWriterSize(apiLogF, 1024*16))
 	e.Logger.SetLevel(burgundy.APILogLevel())
 	e.HideBanner = true
-
-	sigInit(e)
 
 	return e
 }

@@ -1,0 +1,34 @@
+version: '3.1'
+services:
+  burgundy:
+    ports:
+      - "18889:18889"
+    image: eosdaq/burgundy
+    networks:
+      - eos_net
+    deploy:
+      replicas: 1
+    depends_on:
+      - eos_db
+    environment:
+      - KEY=${KEY}
+      - EOS_HOST=http://local_eosio
+      - EOS_PORT=8888
+      - DB_HOST=eos_db
+      - DB_USER=eosdaquser
+      - DB_PASS=eosdaqvotmdnjem
+  db:
+    ports:
+      - "3306:3306"
+    image: mariadb
+    networks:
+      - eos_net
+    environment:
+        MYSQL_ROOT_PASSWORD: eosdaqvotmdnjem
+        MYSQL_DATABASE: eosdaq
+        MYSQL_USER: eosdaquser
+        MYSQL_PASSWORD: eosdaqvotmdnjem
+networks:
+  eos_net:
+      external: true
+

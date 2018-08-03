@@ -10,6 +10,7 @@ import (
 	"burgundy/util"
 
 	"github.com/jinzhu/gorm"
+	"github.com/juju/errors"
 	"github.com/labstack/echo"
 	"go.uber.org/zap"
 )
@@ -37,34 +38,35 @@ func InitHandler(burgundy conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err erro
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 
 	// Default Group
-	chart := e.Group("/")
-	chart.File("/swagger.json", "swagger.json")
-	chart.Use(mw.TransID())
+	api := e.Group("/api")
+	api.File("/swagger.json", "swagger.json")
+	ver := api.Group("/v1")
+	sys := ver.Group("/acct")
+	sys.Use(mw.TransID())
+	user := sys.Group("/user")
 
-	chartRepo := _Repo.NewGormChartRepository(db)
-	chartSvc := service.NewChartService(chartRepo, timeout)
-	newChartHTTPHandler(chart, chartSvc)
+	userRepo := _Repo.NewGormUserRepository(db)
+	userSvc, err := service.NewUserService(burgundy, userRepo, timeout)
+	if err != nil {
+		return errors.Annotatef(err, "InitHandler")
+	}
+	newUserHTTPHandler(user, userSvc)
 
 	return nil
 }
 
-// HTTPChartHandler ...
-type HTTPChartHandler struct {
-	ChartService service.ChartService
+// HTTPUserHandler ...
+type HTTPUserHandler struct {
+	UserService service.UserService
 }
 
-func newChartHTTPHandler(eg *echo.Group, cs service.ChartService) {
-	handler := &HTTPChartHandler{
-		ChartService: cs,
+func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
+	handler := &HTTPUserHandler{
+		UserService: us,
 	}
 
-	eg.GET("config", handler.Config)
-	eg.GET("symbol_info", handler.SymbolInfo)
-	eg.GET("symbols", handler.Symbols)
-	eg.GET("search", handler.Search)
-	eg.GET("history", handler.History)
-	eg.GET("marks", handler.Marks)
-	eg.GET("timescale_marks", handler.TimeScale)
-	eg.GET("time", handler.Time)
-	eg.GET("quotes", handler.Quotes)
+	// /api/v1/acct/user
+	eg.POST("", handler.CreateUser)
+	eg.GET("/:accountName", handler.GetUser)
+	eg.DELETE("/:accountName", handler.DeleteUser)
 }

@@ -58,7 +58,10 @@ func InitDB(burgundy conf.ViperConfig) *gorm.DB {
 	return dbConn
 }
 
-// ChartRepository ...
-type ChartRepository interface {
-	GetByID(ctx context.Context, id string) (*models.Chart, error)
+// UserRepository ...
+type UserRepository interface {
+	GetByID(ctx context.Context, accountName string) (*models.User, error)
+	Update(ctx context.Context, user *models.User) (*models.User, error)
+	Store(ctx context.Context, user *models.User) (*models.User, error)
+	Delete(ctx context.Context, accountName string) (bool, error)
 }

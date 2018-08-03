@@ -23,6 +23,11 @@ type DefaultConf struct {
 	ConfServerTIMEOUT int
 	ConfAPILOGLEVEL   string
 
+	ConfEOSHOST           string
+	ConfEOSPORT           int
+	ConfEOSContract       string
+	ConfEOSCrawDurationMS int
+
 	ConfDBHOST string
 	ConfDBPORT int
 	ConfDBUSER string
@@ -31,18 +36,22 @@ type DefaultConf struct {
 }
 
 var defaultConf = DefaultConf{
-	EnvServerDEV:      ".env.dev",
-	EnvServerSTAGE:    ".env.stage",
-	EnvServerPROD:     ".env",
-	ConfServerPORT:    2333,
-	ConfServerLOGMODE: "console",
-	ConfServerTIMEOUT: 30,
-	ConfAPILOGLEVEL:   "debug",
-	ConfDBHOST:        "www.db4free.net",
-	ConfDBPORT:        3306,
-	ConfDBUSER:        "eosdaquser",
-	ConfDBPASS:        "eosdaqvotmdnjem",
-	ConfDBNAME:        "eosdaq",
+	EnvServerDEV:          ".env.dev",
+	EnvServerSTAGE:        ".env.stage",
+	EnvServerPROD:         ".env",
+	ConfServerPORT:        2333,
+	ConfServerLOGMODE:     "console",
+	ConfServerTIMEOUT:     30,
+	ConfAPILOGLEVEL:       "debug",
+	ConfEOSHOST:           "http://10.100.100.2",
+	ConfEOSPORT:           18888,
+	ConfEOSContract:       "eosdaq",
+	ConfEOSCrawDurationMS: 500,
+	ConfDBHOST:            "www.db4free.net",
+	ConfDBPORT:            3306,
+	ConfDBUSER:            "eosdaquser",
+	ConfDBPASS:            "eosdaqvotmdnjem",
+	ConfDBNAME:            "eosdaq",
 }
 
 // ViperConfig ...
@@ -58,6 +67,8 @@ func init() {
 	pflag.IntP("port", "p", defaultConf.ConfServerPORT, "burgundy Port")
 	pflag.IntP("timeout", "t", defaultConf.ConfServerTIMEOUT, "burgundy Context timeout(sec)")
 
+	pflag.String("key", "eosdaq contract private key", "EOSDAQ Private key")
+
 	pflag.String("db_host", defaultConf.ConfDBHOST, "burgundy's DB host")
 	pflag.Int("db_port", defaultConf.ConfDBPORT, "burgundy's DB port")
 	pflag.String("db_user", defaultConf.ConfDBUSER, "burgundy's DB user")
@@ -68,17 +79,21 @@ func init() {
 
 	var err error
 	Burgundy, err = readConfig(map[string]interface{}{
-		"port":        defaultConf.ConfServerPORT,
-		"timeout":     defaultConf.ConfServerTIMEOUT,
-		"logmode":     defaultConf.ConfServerLOGMODE,
-		"loglevel":    defaultConf.ConfAPILOGLEVEL,
-		"profile":     false,
-		"profilePort": 6060,
-		"db_host":     defaultConf.ConfDBHOST,
-		"db_port":     defaultConf.ConfDBPORT,
-		"db_user":     defaultConf.ConfDBUSER,
-		"db_pass":     defaultConf.ConfDBPASS,
-		"db_name":     defaultConf.ConfDBNAME,
+		"port":         defaultConf.ConfServerPORT,
+		"timeout":      defaultConf.ConfServerTIMEOUT,
+		"logmode":      defaultConf.ConfServerLOGMODE,
+		"loglevel":     defaultConf.ConfAPILOGLEVEL,
+		"profile":      false,
+		"profilePort":  6060,
+		"eos_host":     defaultConf.ConfEOSHOST,
+		"eos_port":     defaultConf.ConfEOSPORT,
+		"eos_contract": defaultConf.ConfEOSContract,
+		"eos_crawl":    defaultConf.ConfEOSCrawDurationMS,
+		"db_host":      defaultConf.ConfDBHOST,
+		"db_port":      defaultConf.ConfDBPORT,
+		"db_user":      defaultConf.ConfDBUSER,
+		"db_pass":      defaultConf.ConfDBPASS,
+		"db_name":      defaultConf.ConfDBNAME,
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)
