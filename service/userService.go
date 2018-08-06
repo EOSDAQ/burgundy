@@ -25,6 +25,7 @@ func NewUserService(burgundy conf.ViperConfig,
 		burgundy.GetString("eos_host"),
 		burgundy.GetInt("eos_port"),
 		burgundy.GetString("eos_contract"),
+		burgundy.GetString("eos_acctcontract"),
 	), burgundy.GetStringSlice("key"))
 	if err != nil {
 		return nil, errors.Annotatef(err, "NewUserService")

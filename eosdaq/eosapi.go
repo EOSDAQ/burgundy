@@ -62,7 +62,8 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 
 type EosdaqAPI struct {
 	*eos.API
-	eoscontract string
+	eoscontract  string
+	acctcontract string
 }
 
 func NewAPI(eosnet *EosNet, keys []string) (*EosdaqAPI, error) {
@@ -82,7 +83,7 @@ func NewAPI(eosnet *EosNet, keys []string) (*EosdaqAPI, error) {
 		}
 	}
 	api.SetSigner(keyBag)
-	return &EosdaqAPI{api, eosnet.contract}, nil
+	return &EosdaqAPI{api, eosnet.contract, eosnet.acctcontract}, nil
 }
 
 func (e *EosdaqAPI) CrawlData() {
@@ -113,11 +114,11 @@ func (e *EosdaqAPI) CrawlData() {
 }
 
 func (e *EosdaqAPI) RegisterUser(account string) error {
-	return e.call(RegisterAction(e.eoscontract, account))
+	return e.call(RegisterAction(e.acctcontract, account))
 }
 
 func (e *EosdaqAPI) UnregisterUser(account string) error {
-	return e.call(UnregisterAction(e.eoscontract, account))
+	return e.call(UnregisterAction(e.acctcontract, account))
 }
 
 func (e *EosdaqAPI) call(action *eos.Action) error {
