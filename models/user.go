@@ -11,9 +11,10 @@ type User struct {
 	gorm.Model   `json:"-"`
 	AccountName  string `json:"account_name"`
 	Email        string `json:"email"`
-	ConfirmEmail bool   `json:"confirm_email"`
-	ConfirmOTP   bool   `json:"confirm_otp"`
-	EOSPubkey    string `json:"eos_pubkey"`
+	EmailHash    string `json:"email_hash"`
+	EmailConfirm bool   `json:"email_confirm"`
+	OTPKey       string `json:"otp_key"`
+	OTPConfirm   bool   `json:"otp_confirm"`
 }
 
 func (u *User) String() string {
