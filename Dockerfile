@@ -1,6 +1,4 @@
 FROM golang:1.10 AS builder
-ARG VERSION
-ARG BUILD_DATE
 
 # Download and install the latest release of dep
 RUN go get -u github.com/golang/dep/cmd/dep
@@ -10,6 +8,9 @@ RUN go get -u github.com/go-swagger/go-swagger/cmd/swagger
 #RUN go get -u honnef.co/go/tools/cmd/megacheck
 
 RUN apt-get install -y ca-certificates
+
+ARG VERSION
+ARG BUILD_DATE
 
 # Copy the code from the host and compile it
 WORKDIR $GOPATH/src/burgundy

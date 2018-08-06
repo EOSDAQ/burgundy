@@ -15,7 +15,7 @@ func TestNewAPI(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{&eosNet{"http://10.100.100.2", 18888, "cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f"}, []string{"5HtZU5SArLEK3WDNntrK9fRCU8GFm9Ga4EAt9omGuYwiiFxMRyd"}}, false},
+		{"normal", args{&eosNet{"http://eosnet", 18888, "eosdaq", "eosdaqacnt"}, []string{"5KF7GfYH3SXjo4MNUUG8qg3Cs72T9mZueM12cvUTgBv8621VXcL"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
