@@ -13,8 +13,8 @@ func (h *HTTPUserHandler) CreateUser(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 
 	user := &models.User{
-		ConfirmEmail: false,
-		ConfirmOTP:   false,
+		EmailConfirm: false,
+		OTPConfirm:   false,
 	}
 	if err = c.Bind(user); err != nil {
 		mlog.Infow("CreateUser bind error ", "trID", trID, "req", *user, "err", err)
