@@ -33,9 +33,15 @@ func (g *gormUserRepository) GetByID(ctx context.Context, accountName string) (u
 }
 
 func (g *gormUserRepository) Update(ctx context.Context, user *models.User) (u *models.User, err error) {
-	session := g.Conn.Where("account_name = ?", user.AccountName)
-	if err = session.Update(user).Error; err != nil {
-		return nil, err
+
+	scope := g.Conn.Model(&models.User{}).Where("account_name = ?", user.AccountName).Update(user)
+
+	if scope.Error != nil {
+		return nil, scope.Error
+	}
+
+	if scope.RowsAffected == 0 {
+		return nil, fmt.Errorf("record not found")
 	}
 
 	return user, nil

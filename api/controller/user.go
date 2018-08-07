@@ -86,6 +86,8 @@ func (h *HTTPUserHandler) UpdateUser(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 
 	user := &models.User{}
+	user.AccountName = c.Param("accountName")
+
 	if err = c.Bind(user); err != nil {
 		mlog.Infow("UpdateUser bind error ", "trID", trID, "req", *user, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
