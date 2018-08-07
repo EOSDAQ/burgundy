@@ -1,9 +1,8 @@
 package eosdaq
 
 import (
+	"burgundy/models"
 	"fmt"
-	"strconv"
-	"time"
 
 	eos "github.com/eoscanada/eos-go"
 	"github.com/juju/errors"
@@ -18,46 +17,6 @@ func init() {
 	eos.RegisterAction(AN("eosio"), ActN("drop"), EosdaqAction{})
 	eos.RegisterAction(AN("eosio"), ActN("deletetransx"), Transx{})
 	//eos.Debug = true
-}
-
-/*
-   "id": 0,
-   "price": 30,
-   "maker": "newrotaker",
-   "maker_asset": "0.0011 SYS",
-   "taker": "newrovp",
-   "taker_asset": "0.0333 ABC",
-   "ordertime": 739407904
-*/
-type EosdaqTx struct {
-	ID         int       `json:"id"`
-	Price      int       `json:"price"`
-	Maker      string    `json:"maker"`
-	MakerAsset string    `json:"maker_asset"`
-	Taker      string    `json:"taker"`
-	TakerAsset string    `json:"taker_asset"`
-	OrderTime  Timestamp `json:"ordertime"`
-}
-type Timestamp struct {
-	time.Time
-}
-
-func (t *Timestamp) MarshalJSON() ([]byte, error) {
-	ts := t.Time.Unix()
-	stamp := fmt.Sprint(ts)
-
-	return []byte(stamp), nil
-}
-
-func (t *Timestamp) UnmarshalJSON(b []byte) error {
-	ts, err := strconv.Atoi(string(b))
-	if err != nil {
-		return err
-	}
-
-	t.Time = time.Unix(int64(ts), 0)
-
-	return nil
 }
 
 type EosdaqAPI struct {
@@ -87,7 +46,7 @@ func NewAPI(eosnet *EosNet, keys []string) (*EosdaqAPI, error) {
 }
 
 func (e *EosdaqAPI) CrawlData() {
-	var res []EosdaqTx
+	var res []models.EosdaqTx
 	out := &eos.GetTableRowsResp{More: true}
 	for out.More {
 		out, _ = e.GetTableRows(eos.GetTableRowsRequest{

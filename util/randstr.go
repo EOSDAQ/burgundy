@@ -53,3 +53,8 @@ func IntRayleighCDF() int {
 	rnum := rand.New(src).Float64()
 	return int(math.Sqrt(-2 * math.Log(float64(1)-rnum)))
 }
+
+// ArrayToString ...
+func ArrayToString(a []int, delim string) string {
+	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
+}
