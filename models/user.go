@@ -9,12 +9,12 @@ import (
 // User ...
 type User struct {
 	gorm.Model   `json:"-"`
-	AccountName  string `json:"account_name"`
+	AccountName  string `json:"accountName"`
 	Email        string `json:"email"`
-	EmailHash    string `json:"email_hash"`
-	EmailConfirm bool   `json:"email_confirm"`
-	OTPKey       string `json:"otp_key"`
-	OTPConfirm   bool   `json:"otp_confirm"`
+	EmailHash    string `json:"emailHash"`
+	EmailConfirm bool   `json:"emailConfirm"`
+	OTPKey       string `json:"otpKey"`
+	OTPConfirm   bool   `json:"otpConfirm"`
 }
 
 func (u *User) String() string {
