@@ -55,6 +55,6 @@ func IntRayleighCDF() int {
 }
 
 // ArrayToString ...
-func ArrayToString(a []int, delim string) string {
+func ArrayToString(a []uint, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 }

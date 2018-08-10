@@ -65,3 +65,11 @@ type UserRepository interface {
 	Store(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
 }
+
+type EosdaqRepository interface {
+	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
+	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error
+	GetOrderBook(ctx context.Context) (obs []*models.OrderBook, err error)
+	SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error
+	DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error
+}

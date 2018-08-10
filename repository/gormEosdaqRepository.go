@@ -88,7 +88,7 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 }
 
 func (g *gormEosdaqRepository) DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error {
-	valueArgs := []int{}
+	valueArgs := []uint{}
 
 	for _, o := range obs {
 		valueArgs = append(valueArgs, o.ID)
