@@ -1,4 +1,4 @@
-package eosdaq
+package crawler
 
 import (
 	"testing"

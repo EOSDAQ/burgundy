@@ -6,10 +6,11 @@ import (
 	"burgundy/util"
 	"os"
 
+	"github.com/jinzhu/gorm"
 	"github.com/juju/errors"
 )
 
-func prepareServer(burgundy conf.ViperConfig, cancel <-chan os.Signal) bool {
+func prepareServer(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) bool {
 
 	log, err := util.InitLog("server", burgundy.GetString("logmode"))
 	if err != nil {
@@ -17,7 +18,7 @@ func prepareServer(burgundy conf.ViperConfig, cancel <-chan os.Signal) bool {
 		return false
 	}
 
-	if err := eosdaq.InitModule(burgundy, cancel); err != nil {
+	if err := eosdaq.InitModule(burgundy, cancel, db); err != nil {
 		log.Infow("InitModule eosdaq", "err", errors.Details(err))
 		return false
 	}

@@ -11,13 +11,14 @@ import (
 )
 
 type gormEosdaqRepository struct {
-	Conn *gorm.DB
+	Conn     *gorm.DB
+	CoinName string
 }
 
 // NewGormEosdaqRepository ...
-func NewGormEosdaqRepository(Conn *gorm.DB) EosdaqRepository {
+func NewGormEosdaqRepository(Conn *gorm.DB, coinName string) EosdaqRepository {
 	Conn = Conn.AutoMigrate(&models.EosdaqTx{}, &models.OrderBook{})
-	return &gormEosdaqRepository{Conn}
+	return &gormEosdaqRepository{Conn, coinName}
 }
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {
@@ -59,9 +60,9 @@ func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context) (obs []*models.
 	session := g.Conn.New()
 	scope := session.Find(obs)
 	if scope.RowsAffected == 0 {
-		return nil
+		return nil, nil
 	}
-	return scope.Error
+	return nil, scope.Error
 
 }
 

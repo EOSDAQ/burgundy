@@ -71,7 +71,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !prepareServer(Burgundy, sc) {
+	if !prepareServer(Burgundy, sc, db) {
 		os.Exit(1)
 	}
 	startServer(Burgundy, e)

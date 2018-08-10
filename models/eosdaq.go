@@ -6,17 +6,6 @@ import (
 	"time"
 )
 
-// EosdaqTX ...
-type EosdaqTx struct {
-	ID         uint      `json:"id" gorm:"primary_key"`
-	Price      int       `json:"price"`
-	Maker      string    `json:"maker"`
-	MakerAsset string    `json:"maker_asset"`
-	Taker      string    `json:"taker"`
-	TakerAsset string    `json:"taker_asset"`
-	OrderTime  Timestamp `json:"ordertime"`
-}
-
 // Timestamp ...
 type Timestamp struct {
 	time.Time
@@ -42,8 +31,24 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// EosdaqTX ...
+type EosdaqTx struct {
+	ID         uint      `json:"id" gorm:"primary_key"`
+	Price      int       `json:"price"`
+	Maker      string    `json:"maker"`
+	MakerAsset string    `json:"maker_asset"`
+	Taker      string    `json:"taker"`
+	TakerAsset string    `json:"taker_asset"`
+	OrderTime  Timestamp `json:"ordertime"`
+	Symbol     string
+}
+
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}
+}
+
+func (et *EosdaqTx) TableName() string {
+	return fmt.Sprintf("%s_tx", et.Symbol)
 }
 
 // OrderType ...
@@ -55,6 +60,18 @@ const (
 	BID
 )
 
+// String ...
+func (o OrderType) String() string {
+	switch o {
+	case ASK:
+		return "stask"
+	case BID:
+		return "stbid"
+	default:
+		return "tx"
+	}
+}
+
 // OrderBook ...
 type OrderBook struct {
 	ID        uint      `json:"id" gorm:"primary_key"`
@@ -63,8 +80,13 @@ type OrderBook struct {
 	Quantity  string    `json:"quantity"`
 	OrderTime Timestamp `json:"ordertime"`
 	Type      OrderType `json:"ordertype"`
+	Symbol    string
 }
 
 func (ob *OrderBook) GetArgs() []interface{} {
 	return []interface{}{ob.ID, ob.Name, ob.Price, ob.Quantity, ob.OrderTime, ob.Type}
+}
+
+func (ob *OrderBook) TableName() string {
+	return fmt.Sprintf("%s_orderbook", ob.Symbol)
 }
