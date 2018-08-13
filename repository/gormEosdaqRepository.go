@@ -12,18 +12,19 @@ import (
 
 type gormEosdaqRepository struct {
 	Conn     *gorm.DB
-	CoinName string
+	Contract string
 }
 
 // NewGormEosdaqRepository ...
-func NewGormEosdaqRepository(Conn *gorm.DB, coinName string) EosdaqRepository {
-	Conn = Conn.AutoMigrate(&models.EosdaqTx{}, &models.OrderBook{})
-	return &gormEosdaqRepository{Conn, coinName}
+func NewGormEosdaqRepository(Conn *gorm.DB, contract string) EosdaqRepository {
+	//Conn = Conn.Table(fmt.Sprintf("%s_tx", contract)).AutoMigrate(&models.EosdaqTx{})
+	//Conn = Conn.Table(fmt.Sprintf("%s_orderbook", contract)).AutoMigrate(&models.OrderBook{})
+	return &gormEosdaqRepository{Conn, contract}
 }
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {
 	t = &models.EosdaqTx{}
-	scope := g.Conn.Where("id = ?", id).First(&t)
+	scope := g.Conn.Table(fmt.Sprintf("%s_tx", g.Contract)).Where("id = ?", id).First(&t)
 	if scope.Error != nil {
 		return nil, scope.Error
 	}

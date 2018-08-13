@@ -39,7 +39,7 @@ type EosdaqTx struct {
 	MakerAsset string    `json:"maker_asset"`
 	Taker      string    `json:"taker"`
 	TakerAsset string    `json:"taker_asset"`
-	OrderTime  Timestamp `json:"ordertime"`
+	OrderTime  Timestamp `json:"ordertime" gorm:"embedded"`
 	Symbol     string
 }
 

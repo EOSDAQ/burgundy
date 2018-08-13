@@ -26,7 +26,6 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 	port := burgundy.GetInt("eos_port")
 	contracts := strings.Split(burgundy.GetString("eos_contract"), ",")
 
-	eosRepo := _Repo.NewGormEosdaqRepository(db)
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 	crawlTimer := time.Duration(burgundy.GetInt("eos_crawl")) * time.Millisecond
 
@@ -42,6 +41,7 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 			return errors.Annotatef(err, "InitModule NewAPI failed contract[%s]", c)
 		}
 
+		eosRepo := _Repo.NewGormEosdaqRepository(db, c)
 		eossvc, err := service.NewEosdaqService(burgundy, eosRepo, timeout)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewSvc failed contract[%s]", c)
