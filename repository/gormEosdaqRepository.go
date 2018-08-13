@@ -19,6 +19,9 @@ type gormEosdaqRepository struct {
 func NewGormEosdaqRepository(Conn *gorm.DB, contract string) EosdaqRepository {
 	//Conn = Conn.Table(fmt.Sprintf("%s_tx", contract)).AutoMigrate(&models.EosdaqTx{})
 	//Conn = Conn.Table(fmt.Sprintf("%s_orderbook", contract)).AutoMigrate(&models.OrderBook{})
+	gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
+		return fmt.Sprintf("%s_%s", contract, defaultTableName)
+	}
 	return &gormEosdaqRepository{Conn, contract}
 }
 
@@ -57,13 +60,19 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 	return nil
 }
 
-func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context) (obs []*models.OrderBook, err error) {
+func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context) (obs []models.OrderBook, err error) {
 	session := g.Conn.New()
-	scope := session.Find(obs)
+	scope := session.Find(&obs)
 	if scope.RowsAffected == 0 {
+		fmt.Printf("not found record")
 		return nil, nil
 	}
-	return nil, scope.Error
+	/*
+		for _, f := range scope.SelectAttrs() {
+			fmt.Println("fields : ", f)
+		}
+	*/
+	return obs, scope.Error
 
 }
 

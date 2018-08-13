@@ -33,22 +33,18 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 
 // EosdaqTX ...
 type EosdaqTx struct {
-	ID         uint      `json:"id" gorm:"primary_key"`
-	Price      int       `json:"price"`
-	Maker      string    `json:"maker"`
-	MakerAsset string    `json:"maker_asset"`
-	Taker      string    `json:"taker"`
-	TakerAsset string    `json:"taker_asset"`
-	OrderTime  Timestamp `json:"ordertime" gorm:"embedded"`
-	Symbol     string
+	ID                uint      `json:"id" gorm:"primary_key"`
+	Price             int       `json:"price"`
+	Maker             string    `json:"maker"`
+	MakerAsset        string    `json:"maker_asset"`
+	Taker             string    `json:"taker"`
+	TakerAsset        string    `json:"taker_asset"`
+	OrderTime         uint      `json:"ordertime"`
+	OrderTimeReadable time.Time `json:"ordertime_readable"`
 }
 
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}
-}
-
-func (et *EosdaqTx) TableName() string {
-	return fmt.Sprintf("%s_tx", et.Symbol)
 }
 
 // OrderType ...
@@ -74,19 +70,15 @@ func (o OrderType) String() string {
 
 // OrderBook ...
 type OrderBook struct {
-	ID        uint      `json:"id" gorm:"primary_key"`
-	Name      string    `json:"name"`
-	Price     int       `json:"price"`
-	Quantity  string    `json:"quantity"`
-	OrderTime Timestamp `json:"ordertime"`
-	Type      OrderType `json:"ordertype"`
-	Symbol    string
+	ID                uint      `json:"id" gorm:"primary_key"`
+	Name              string    `json:"name"`
+	Price             int       `json:"price"`
+	Quantity          string    `json:"quantity"`
+	OrderTime         uint      `json:"ordertime"`
+	OrderTimeReadable time.Time `json:"ordertime_readable"`
+	Type              OrderType `json:"ordertype"`
 }
 
 func (ob *OrderBook) GetArgs() []interface{} {
 	return []interface{}{ob.ID, ob.Name, ob.Price, ob.Quantity, ob.OrderTime, ob.Type}
-}
-
-func (ob *OrderBook) TableName() string {
-	return fmt.Sprintf("%s_orderbook", ob.Symbol)
 }
