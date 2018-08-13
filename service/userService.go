@@ -21,12 +21,11 @@ type userUsecase struct {
 func NewUserService(burgundy conf.ViperConfig,
 	ur repository.UserRepository,
 	timeout time.Duration) (UserService, error) {
-	eosapi, err := eosdaq.NewAPI(eosdaq.NewEosnet(
+	eosapi, err := eosdaq.NewAPI(burgundy, eosdaq.NewEosnet(
 		burgundy.GetString("eos_host"),
 		burgundy.GetInt("eos_port"),
-		burgundy.GetString("eos_contract"),
 		burgundy.GetString("eos_acctcontract"),
-	), burgundy.GetStringSlice("key"))
+	))
 	if err != nil {
 		return nil, errors.Annotatef(err, "NewUserService")
 	}
@@ -50,7 +49,7 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
 
-	if err = uuc.eosAPI.RegisterUser(user.AccountName); err != nil {
+	if err = uuc.eosAPI.DoAction(uuc.eosAPI.RegisterAction(user.AccountName)); err != nil {
 		mlog.Infow("userUsecase register error", "user", user, "err", err)
 		// To pass Already Exist
 	}
@@ -85,7 +84,7 @@ func (uuc userUsecase) Delete(ctx context.Context, accountName string) (result b
 	defer cancel()
 
 	var eoserr, dberr error
-	if err = uuc.eosAPI.UnregisterUser(accountName); err != nil {
+	if err = uuc.eosAPI.DoAction(uuc.eosAPI.UnregisterAction(accountName)); err != nil {
 		mlog.Infow("userUsecase unregister error", "user", accountName, "err", err)
 		eoserr = errors.Annotatef(err, "user[%s]", accountName)
 	}

@@ -17,7 +17,7 @@ type gormEosdaqRepository struct {
 
 // NewGormEosdaqRepository ...
 func NewGormEosdaqRepository(Conn *gorm.DB, contract string) EosdaqRepository {
-	Conn = Conn.Table(fmt.Sprintf("%s_eosdaq_txs", contract)).AutoMigrate(&models.EosdaqTx{})
+	Conn = Conn.Table(fmt.Sprintf("%s_txs", contract)).AutoMigrate(&models.EosdaqTx{})
 	Conn = Conn.Table(fmt.Sprintf("%s_order_books", contract)).AutoMigrate(&models.OrderBook{})
 	/*
 		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
@@ -33,7 +33,7 @@ func (g *gormEosdaqRepository) Table(table string) *gorm.DB {
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {
 	t = &models.EosdaqTx{}
-	scope := g.Table("eosdaq_txs").Where("id = ?", id).First(&t)
+	scope := g.Table("txs").Where("id = ?", id).First(&t)
 	if scope.Error != nil {
 		return nil, scope.Error
 	}
@@ -54,7 +54,7 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 		valueArgs = append(valueArgs, t.GetArgs()...)
 	}
 
-	smt := `INSERT INTO %s_eosdaq_tx(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
+	smt := `INSERT INTO %s_txs(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
 	smt = fmt.Sprintf(smt, g.Contract, strings.Join(valueStrings, ","))
 
 	tx := g.Conn.Begin()
@@ -66,8 +66,8 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 	return nil
 }
 
-func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context) (obs []*models.OrderBook, err error) {
-	scope := g.Table("order_books").Find(&obs)
+func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error) {
+	scope := g.Table("order_books").Where("type = ?", orderType).Find(&obs)
 	if scope.RowsAffected == 0 {
 		fmt.Printf("not found record")
 		return nil, nil
@@ -79,6 +79,10 @@ func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context) (obs []*models.
 func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error {
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
+
+	if len(obs) == 0 {
+		return nil
+	}
 
 	for _, o := range obs {
 		valueStrings = append(valueStrings, "(?,?,?,?,?,?)")
@@ -99,6 +103,10 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 
 func (g *gormEosdaqRepository) DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error {
 	valueArgs := []uint{}
+
+	if len(obs) == 0 {
+		return nil
+	}
 
 	for _, o := range obs {
 		valueArgs = append(valueArgs, o.ID)

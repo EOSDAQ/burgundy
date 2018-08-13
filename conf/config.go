@@ -102,6 +102,7 @@ func init() {
 	}
 
 	Burgundy.BindPFlags(pflag.CommandLine)
+	Burgundy.Debug()
 }
 
 func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
@@ -116,6 +117,8 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 	v.AddConfigPath("../conf")
 	v.AddConfigPath("../../conf")
 	v.AddConfigPath("$HOME/.burgundy")
+
+	v.SetEnvPrefix("eosdaq")
 	v.AutomaticEnv()
 
 	switch strings.ToUpper(v.GetString("ENV")) {

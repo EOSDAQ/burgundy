@@ -47,20 +47,22 @@ func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 	*/
 
 	keyBag := eos.NewKeyBag()
-	keys := strings.Split(burgundy.GetString(fmt.Sprintf("%s_key", eosnet.contract)), ",")
+	keys := strings.Split(burgundy.GetString(strings.ToUpper(eosnet.contract)), ",")
 	for _, key := range keys {
 		if err := keyBag.Add(key); err != nil {
-			return nil, errors.Annotatef(err, "contract[%s] add key error [%s]", eosnet.contract, key)
+			return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
 		}
 	}
 	api.SetSigner(keyBag)
+
+	if burgundy.GetString("loglevel") == "debug" {
+		api.Debug = true
+	}
 	return &EosdaqAPI{api, eosnet.contract}, nil
 }
 
 func (e *EosdaqAPI) DoAction(action *eos.Action) error {
-	e.Debug = true
 	resp, err := e.SignPushActions(action)
-	e.Debug = false
 	if err != nil {
 		mlog.Infow("ERROR calling : ", "err", err)
 	} else {
@@ -71,19 +73,29 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 
 func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 	var res []*models.EosdaqTx
+	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	begin, end := uint(0), uint(0)
 	for out.More {
-		out, _ = e.GetTableRows(eos.GetTableRowsRequest{
+		out, err = e.GetTableRows(eos.GetTableRowsRequest{
 			Scope: e.contract,
 			Code:  e.contract,
 			Table: "tx",
 			JSON:  true,
 		})
-		if out == nil || len(res) == 0 {
+		if err != nil {
+			mlog.Errorw("GetTx error", "contract", e.contract, "err", err)
+			break
+		}
+		if out == nil {
+			mlog.Infow("GetTx nil", "contract", e.contract)
 			break
 		}
 		out.JSONToStructs(&res)
+		if len(res) == 0 {
+			mlog.Infow("GetTx nil", "contract", e.contract)
+			break
+		}
 		result = append(result, res...)
 		if begin == 0 {
 			begin = res[0].ID
@@ -91,7 +103,7 @@ func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 		end = res[len(res)-1].ID
 	}
 	if len(result) > 0 {
-		fmt.Printf("delete tx from[%d] to[%d]\n", begin, end)
+		mlog.Infow("delete tx ", "from", begin, "to", end)
 		e.DoAction(
 			DeleteTransaction(eos.AccountName(e.contract), begin, end),
 		)
@@ -108,18 +120,28 @@ func (e *EosdaqAPI) GetBid() (result []*models.OrderBook) {
 
 func (e *EosdaqAPI) getOrderBook(orderType models.OrderType) (result []*models.OrderBook) {
 	var res []*models.OrderBook
+	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	for out.More {
-		out, _ = e.GetTableRows(eos.GetTableRowsRequest{
+		out, err = e.GetTableRows(eos.GetTableRowsRequest{
 			Scope: e.contract,
 			Code:  e.contract,
 			Table: orderType.String(),
 			JSON:  true,
 		})
-		if out == nil || len(res) == 0 {
+		if err != nil {
+			mlog.Errorw("getOrderBook error", "contract", e.contract, "type", orderType, "err", err)
+			break
+		}
+		if out == nil {
+			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
 			break
 		}
 		out.JSONToStructs(&res)
+		if len(res) == 0 {
+			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
+			break
+		}
 		for _, r := range res {
 			r.Type = orderType
 		}

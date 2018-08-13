@@ -2,7 +2,7 @@ package main
 
 import (
 	conf "burgundy/conf"
-	"burgundy/eosdaq"
+	"burgundy/crawler"
 	"burgundy/util"
 	"os"
 
@@ -18,7 +18,7 @@ func prepareServer(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.
 		return false
 	}
 
-	if err := eosdaq.InitModule(burgundy, cancel, db); err != nil {
+	if err := crawler.InitModule(burgundy, cancel, db); err != nil {
 		log.Infow("InitModule eosdaq", "err", errors.Details(err))
 		return false
 	}

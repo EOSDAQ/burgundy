@@ -5,12 +5,12 @@ import (
 )
 
 // RegisterAction ... push action eosdaq enroll '[ "eosdaq" ]' -p eosdaq@active
-func RegisterAction(contract, account string) *eos.Action {
-	return action(contract, account, "enroll")
+func (e *EosdaqAPI) RegisterAction(account string) *eos.Action {
+	return action(e.contract, account, "enroll")
 }
 
-func UnregisterAction(contract, account string) *eos.Action {
-	return action(contract, account, "drop")
+func (e *EosdaqAPI) UnregisterAction(account string) *eos.Action {
+	return action(e.contract, account, "drop")
 }
 
 func action(contract, account, action string) *eos.Action {

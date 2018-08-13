@@ -94,7 +94,7 @@ func getArgsForTxs(txs []*models.EosdaqTx) (ret []driver.Value) {
 	return ret
 }
 
-func getTestOrderBooks(n int) []*models.OrderBook {
+func getTestOrderBooks(n int, orderType models.OrderType) []*models.OrderBook {
 	ret := []*models.OrderBook{}
 	for i := 0; i < n; i++ {
 		o := &models.OrderBook{
@@ -103,7 +103,7 @@ func getTestOrderBooks(n int) []*models.OrderBook {
 			Price:     util.RandNum(10000),
 			Quantity:  fmt.Sprintf("%d.%d ICO", util.RandNum(1000), util.RandNum(10000)),
 			OrderTime: uint(time.Now().UnixNano()),
-			Type:      models.ASK,
+			Type:      orderType,
 		}
 		ret = append(ret, o)
 	}
@@ -112,7 +112,7 @@ func getTestOrderBooks(n int) []*models.OrderBook {
 }
 
 func getRowsForOrderBooks(orderbooks []*models.OrderBook) *sqlmock.Rows {
-	var orderbookFieldNames = []string{"id", "name", "price", "quantity", "order_time", "order_time_readable", "ordertype"}
+	var orderbookFieldNames = []string{"id", "name", "price", "quantity", "order_time", "order_time_readable", "type"}
 	rows := sqlmock.NewRows(orderbookFieldNames)
 	for _, o := range orderbooks {
 		rows = rows.AddRow(o.ID, o.Name, o.Price, o.Quantity, o.OrderTime, o.OrderTimeReadable, o.Type)
@@ -191,18 +191,21 @@ func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository,
 
 func testGetOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
-	expOrderBooks := getTestOrderBooks(2)
-	m.ExpectQuery(fixedFullRe(fmt.Sprintf("SELECT * FROM \"%s_order_books\"", contract))).
-		WillReturnRows(getRowsForOrderBooks(expOrderBooks))
+	for _, orderType := range []models.OrderType{models.ASK, models.BID} {
+		expOrderBooks := getTestOrderBooks(2, orderType)
+		m.ExpectQuery(fixedFullRe(fmt.Sprintf("SELECT * FROM \"%s_order_books\" WHERE (type = ?)", contract))).
+			WithArgs([]driver.Value{orderType}...).
+			WillReturnRows(getRowsForOrderBooks(expOrderBooks))
 
-	orderBooks, err := repo.GetOrderBook(context.Background())
-	assert.Nil(t, err)
-	assert.Equal(t, expOrderBooks, orderBooks)
+		orderBooks, err := repo.GetOrderBook(context.Background(), orderType)
+		assert.Nil(t, err)
+		assert.Equal(t, expOrderBooks, orderBooks)
+	}
 }
 
 func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
-	expOrderBooks := getTestOrderBooks(2)
+	expOrderBooks := getTestOrderBooks(2, models.ASK)
 	smt := `INSERT INTO %s_order_books(id, name, price, quantity, order_time, type) VALUES %s`
 	valueStrings := []string{}
 	for range expOrderBooks {
@@ -223,7 +226,7 @@ func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, c
 
 func testDeleteOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
-	expOrderBooks := getTestOrderBooks(2)
+	expOrderBooks := getTestOrderBooks(2, models.ASK)
 	smt := `DELETE FROM %s_order_books WHERE id IN (%s)`
 	valueArgs := []uint{}
 	for _, o := range expOrderBooks {

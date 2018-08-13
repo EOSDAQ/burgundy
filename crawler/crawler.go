@@ -5,6 +5,7 @@ import (
 	"burgundy/eosdaq"
 	_Repo "burgundy/repository"
 	"burgundy/service"
+	"burgundy/util"
 	"context"
 	"os"
 	"strings"
@@ -12,12 +13,19 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/juju/errors"
+	"go.uber.org/zap"
 )
 
 type Crawler struct {
 	api           *eosdaq.EosdaqAPI
 	EosdaqService service.EosdaqService
 	ticker        *time.Ticker
+}
+
+var mlog *zap.SugaredLogger
+
+func init() {
+	mlog, _ = util.InitLog("crawler", "console")
 }
 
 func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
@@ -30,24 +38,19 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 	crawlTimer := time.Duration(burgundy.GetInt("eos_crawlMS")) * time.Millisecond
 
 	for _, c := range contracts {
-		eosnet := &eosdaq.EosNet{
-			host:     host,
-			port:     port,
-			contract: c,
-		}
-
-		api, err := NewAPI(burgundy, eosnet)
+		eosnet := eosdaq.NewEosnet(host, port, c)
+		api, err := eosdaq.NewAPI(burgundy, eosnet)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewAPI failed contract[%s]", c)
 		}
 
 		eosRepo := _Repo.NewGormEosdaqRepository(db, c)
-		eossvc, err := service.NewEosdaqService(burgundy, eosRepo, timeout)
+		eossvc, err := service.NewEosdaqService(burgundy, c, eosRepo, timeout)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewSvc failed contract[%s]", c)
 		}
 
-		err := NewCrawler(api, eossvc, crawlTimer, cancel)
+		err = NewCrawler(api, eossvc, crawlTimer, cancel)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewCrawler failed contract[%s]", c)
 		}
@@ -69,17 +72,19 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		t := time.NewTicker(d)
 		for _ = range t.C {
 			ctx := context.Background()
+			//mlog.Infow("Crawler UpdateOrderbook Ask")
 			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk())
 		}
 	}(c, d)
-	go func(ic *Crawler) {
+	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
 		for _ = range t.C {
 			ctx := context.Background()
+			//mlog.Infow("Crawler UpdateOrderbook Bid")
 			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid())
 		}
 	}(c, d)
-	go func(ic *Crawler) {
+	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
 		for _ = range t.C {
 			ctx := context.Background()
