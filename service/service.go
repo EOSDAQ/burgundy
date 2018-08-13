@@ -33,3 +33,9 @@ type UserService interface {
 	Update(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
 }
+
+// EosdaqService ...
+type EosdaqService interface {
+	UpdateOrderbook(ctx context.Context, obs []*models.OrderBook) error
+	UpdateTransaction(ctx context.Context, txs []*models.EosdaqTx) error
+}

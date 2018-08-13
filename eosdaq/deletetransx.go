@@ -4,8 +4,14 @@ import (
 	eos "github.com/eoscanada/eos-go"
 )
 
+type Transx struct {
+	Contract eos.AccountName `json:"name"`
+	Begin    uint64          `json:"baseId"`
+	End      uint64          `json:"endId"`
+}
+
 // DeleteTransaction ... push action eosdaq deletetransx '[ "eosdaq", 0, 0 ]' -p eosdaq@active
-func DeleteTransaction(contract eos.AccountName, begin, end int) *eos.Action {
+func DeleteTransaction(contract eos.AccountName, begin, end uint) *eos.Action {
 	return &eos.Action{
 		Account: contract,
 		Name:    ActN("deletetransx"),
@@ -18,10 +24,4 @@ func DeleteTransaction(contract eos.AccountName, begin, end int) *eos.Action {
 			End:      uint64(end),
 		}),
 	}
-}
-
-type Transx struct {
-	Contract eos.AccountName `json:"name"`
-	Begin    uint64          `json:"baseId"`
-	End      uint64          `json:"endId"`
 }

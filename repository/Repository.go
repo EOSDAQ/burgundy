@@ -54,7 +54,7 @@ func InitDB(burgundy conf.ViperConfig) *gorm.DB {
 		os.Exit(1)
 	}
 	dbConn.DB().SetMaxIdleConns(100)
-	dbConn.LogMode(true)
+	//dbConn.LogMode(true)
 	return dbConn
 }
 
@@ -64,4 +64,12 @@ type UserRepository interface {
 	Update(ctx context.Context, user *models.User) (*models.User, error)
 	Store(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
+}
+
+type EosdaqRepository interface {
+	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
+	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error
+	GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error)
+	SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error
+	DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error
 }

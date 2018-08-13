@@ -1,9 +1,10 @@
 package eosdaq
 
 import (
+	"burgundy/conf"
+	"burgundy/models"
 	"fmt"
-	"strconv"
-	"time"
+	"strings"
 
 	eos "github.com/eoscanada/eos-go"
 	"github.com/juju/errors"
@@ -20,53 +21,22 @@ func init() {
 	//eos.Debug = true
 }
 
-/*
-   "id": 0,
-   "price": 30,
-   "maker": "newrotaker",
-   "maker_asset": "0.0011 SYS",
-   "taker": "newrovp",
-   "taker_asset": "0.0333 ABC",
-   "ordertime": 739407904
-*/
-type EosdaqTx struct {
-	ID         int       `json:"id"`
-	Price      int       `json:"price"`
-	Maker      string    `json:"maker"`
-	MakerAsset string    `json:"maker_asset"`
-	Taker      string    `json:"taker"`
-	TakerAsset string    `json:"taker_asset"`
-	OrderTime  Timestamp `json:"ordertime"`
-}
-type Timestamp struct {
-	time.Time
+type EosNet struct {
+	host     string
+	port     int
+	contract string
 }
 
-func (t *Timestamp) MarshalJSON() ([]byte, error) {
-	ts := t.Time.Unix()
-	stamp := fmt.Sprint(ts)
-
-	return []byte(stamp), nil
-}
-
-func (t *Timestamp) UnmarshalJSON(b []byte) error {
-	ts, err := strconv.Atoi(string(b))
-	if err != nil {
-		return err
-	}
-
-	t.Time = time.Unix(int64(ts), 0)
-
-	return nil
+func NewEosnet(host string, port int, contract string) *EosNet {
+	return &EosNet{host, port, contract}
 }
 
 type EosdaqAPI struct {
 	*eos.API
-	eoscontract  string
-	acctcontract string
+	contract string
 }
 
-func NewAPI(eosnet *EosNet, keys []string) (*EosdaqAPI, error) {
+func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 	api := eos.New(fmt.Sprintf("%s:%d", eosnet.host, eosnet.port))
 
 	/*
@@ -77,58 +47,105 @@ func NewAPI(eosnet *EosNet, keys []string) (*EosdaqAPI, error) {
 	*/
 
 	keyBag := eos.NewKeyBag()
+	keys := strings.Split(burgundy.GetString(strings.ToUpper(eosnet.contract)), ",")
 	for _, key := range keys {
 		if err := keyBag.Add(key); err != nil {
-			return nil, errors.Annotatef(err, "add key error [%s]", key)
+			return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
 		}
 	}
 	api.SetSigner(keyBag)
-	return &EosdaqAPI{api, eosnet.contract, eosnet.acctcontract}, nil
-}
 
-func (e *EosdaqAPI) CrawlData() {
-	var res []EosdaqTx
-	out := &eos.GetTableRowsResp{More: true}
-	for out.More {
-		out, _ = e.GetTableRows(eos.GetTableRowsRequest{
-			Scope: e.eoscontract,
-			Code:  e.eoscontract,
-			Table: "tx",
-			JSON:  true,
-		})
-		if out == nil {
-			break
-		}
-		out.JSONToStructs(&res)
-		for _, r := range res {
-			fmt.Printf("tx value [%v]\n", r)
-		}
-		if len(res) > 0 {
-			begin, end := res[0].ID, res[len(res)-1].ID
-			fmt.Printf("delete tx from[%d] to[%d]\n", begin, end)
-			e.call(
-				DeleteTransaction(eos.AccountName("eosdaq"), begin, end),
-			)
-		}
+	if burgundy.GetString("loglevel") == "debug" {
+		api.Debug = true
 	}
+	return &EosdaqAPI{api, eosnet.contract}, nil
 }
 
-func (e *EosdaqAPI) RegisterUser(account string) error {
-	return e.call(RegisterAction(e.acctcontract, account))
-}
-
-func (e *EosdaqAPI) UnregisterUser(account string) error {
-	return e.call(UnregisterAction(e.acctcontract, account))
-}
-
-func (e *EosdaqAPI) call(action *eos.Action) error {
-	e.Debug = true
+func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	resp, err := e.SignPushActions(action)
-	e.Debug = false
 	if err != nil {
 		mlog.Infow("ERROR calling : ", "err", err)
 	} else {
 		mlog.Infow("RESP : ", "resp", resp)
 	}
 	return err
+}
+
+func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
+	var res []*models.EosdaqTx
+	var err error
+	out := &eos.GetTableRowsResp{More: true}
+	begin, end := uint(0), uint(0)
+	for out.More {
+		out, err = e.GetTableRows(eos.GetTableRowsRequest{
+			Scope: e.contract,
+			Code:  e.contract,
+			Table: "tx",
+			JSON:  true,
+		})
+		if err != nil {
+			mlog.Errorw("GetTx error", "contract", e.contract, "err", err)
+			break
+		}
+		if out == nil {
+			mlog.Infow("GetTx nil", "contract", e.contract)
+			break
+		}
+		out.JSONToStructs(&res)
+		if len(res) == 0 {
+			mlog.Infow("GetTx nil", "contract", e.contract)
+			break
+		}
+		result = append(result, res...)
+		if begin == 0 {
+			begin = res[0].ID
+		}
+		end = res[len(res)-1].ID
+	}
+	if len(result) > 0 {
+		mlog.Infow("delete tx ", "from", begin, "to", end)
+		e.DoAction(
+			DeleteTransaction(eos.AccountName(e.contract), begin, end),
+		)
+	}
+	return result
+}
+
+func (e *EosdaqAPI) GetAsk() (result []*models.OrderBook) {
+	return e.getOrderBook(models.ASK)
+}
+func (e *EosdaqAPI) GetBid() (result []*models.OrderBook) {
+	return e.getOrderBook(models.BID)
+}
+
+func (e *EosdaqAPI) getOrderBook(orderType models.OrderType) (result []*models.OrderBook) {
+	var res []*models.OrderBook
+	var err error
+	out := &eos.GetTableRowsResp{More: true}
+	for out.More {
+		out, err = e.GetTableRows(eos.GetTableRowsRequest{
+			Scope: e.contract,
+			Code:  e.contract,
+			Table: orderType.String(),
+			JSON:  true,
+		})
+		if err != nil {
+			mlog.Errorw("getOrderBook error", "contract", e.contract, "type", orderType, "err", err)
+			break
+		}
+		if out == nil {
+			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
+			break
+		}
+		out.JSONToStructs(&res)
+		if len(res) == 0 {
+			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
+			break
+		}
+		for _, r := range res {
+			r.Type = orderType
+		}
+		result = append(result, res...)
+	}
+	return result
 }

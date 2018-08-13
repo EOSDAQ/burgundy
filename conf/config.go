@@ -23,11 +23,11 @@ type DefaultConf struct {
 	ConfServerTIMEOUT int
 	ConfAPILOGLEVEL   string
 
-	ConfEOSHOST           string
-	ConfEOSPORT           int
-	ConfEOSContract       string
-	ConfEOSAcctContract   string
-	ConfEOSCrawDurationMS int
+	ConfEOSHOST            string
+	ConfEOSPORT            int
+	ConfEOSAcctContract    string
+	ConfEOSCrawlContract   string
+	ConfEOSCrawlDurationMS int
 
 	ConfDBHOST string
 	ConfDBPORT int
@@ -37,23 +37,23 @@ type DefaultConf struct {
 }
 
 var defaultConf = DefaultConf{
-	EnvServerDEV:          ".env.dev",
-	EnvServerSTAGE:        ".env.stage",
-	EnvServerPROD:         ".env",
-	ConfServerPORT:        2333,
-	ConfServerLOGMODE:     "console",
-	ConfServerTIMEOUT:     30,
-	ConfAPILOGLEVEL:       "debug",
-	ConfEOSHOST:           "http://10.100.100.2",
-	ConfEOSPORT:           18888,
-	ConfEOSContract:       "eosdaq",
-	ConfEOSAcctContract:   "eosdaqacnt",
-	ConfEOSCrawDurationMS: 500,
-	ConfDBHOST:            "www.db4free.net",
-	ConfDBPORT:            3306,
-	ConfDBUSER:            "eosdaquser",
-	ConfDBPASS:            "eosdaqvotmdnjem",
-	ConfDBNAME:            "eosdaq",
+	EnvServerDEV:           ".env.dev",
+	EnvServerSTAGE:         ".env.stage",
+	EnvServerPROD:          ".env",
+	ConfServerPORT:         2333,
+	ConfServerLOGMODE:      "console",
+	ConfServerTIMEOUT:      30,
+	ConfAPILOGLEVEL:        "debug",
+	ConfEOSHOST:            "http://10.100.100.2",
+	ConfEOSPORT:            18888,
+	ConfEOSAcctContract:    "eosdaqacnt",
+	ConfEOSCrawlContract:   "eosdaq",
+	ConfEOSCrawlDurationMS: 500,
+	ConfDBHOST:             "www.db4free.net",
+	ConfDBPORT:             3306,
+	ConfDBUSER:             "eosdaquser",
+	ConfDBPASS:             "eosdaqvotmdnjem",
+	ConfDBNAME:             "eosdaq",
 }
 
 // ViperConfig ...
@@ -69,8 +69,6 @@ func init() {
 	pflag.IntP("port", "p", defaultConf.ConfServerPORT, "burgundy Port")
 	pflag.IntP("timeout", "t", defaultConf.ConfServerTIMEOUT, "burgundy Context timeout(sec)")
 
-	pflag.String("key", "eosdaq contract private key", "EOSDAQ Private key")
-
 	pflag.String("db_host", defaultConf.ConfDBHOST, "burgundy's DB host")
 	pflag.Int("db_port", defaultConf.ConfDBPORT, "burgundy's DB port")
 	pflag.String("db_user", defaultConf.ConfDBUSER, "burgundy's DB user")
@@ -81,22 +79,22 @@ func init() {
 
 	var err error
 	Burgundy, err = readConfig(map[string]interface{}{
-		"port":             defaultConf.ConfServerPORT,
-		"timeout":          defaultConf.ConfServerTIMEOUT,
-		"logmode":          defaultConf.ConfServerLOGMODE,
-		"loglevel":         defaultConf.ConfAPILOGLEVEL,
-		"profile":          false,
-		"profilePort":      6060,
-		"eos_host":         defaultConf.ConfEOSHOST,
-		"eos_port":         defaultConf.ConfEOSPORT,
-		"eos_contract":     defaultConf.ConfEOSContract,
-		"eos_acctcontract": defaultConf.ConfEOSAcctContract,
-		"eos_crawl":        defaultConf.ConfEOSCrawDurationMS,
-		"db_host":          defaultConf.ConfDBHOST,
-		"db_port":          defaultConf.ConfDBPORT,
-		"db_user":          defaultConf.ConfDBUSER,
-		"db_pass":          defaultConf.ConfDBPASS,
-		"db_name":          defaultConf.ConfDBNAME,
+		"port":              defaultConf.ConfServerPORT,
+		"timeout":           defaultConf.ConfServerTIMEOUT,
+		"logmode":           defaultConf.ConfServerLOGMODE,
+		"loglevel":          defaultConf.ConfAPILOGLEVEL,
+		"profile":           false,
+		"profilePort":       6060,
+		"eos_host":          defaultConf.ConfEOSHOST,
+		"eos_port":          defaultConf.ConfEOSPORT,
+		"eos_acctcontract":  defaultConf.ConfEOSAcctContract,
+		"eos_crawlcontract": defaultConf.ConfEOSCrawlContract,
+		"eos_crawlMS":       defaultConf.ConfEOSCrawlDurationMS,
+		"db_host":           defaultConf.ConfDBHOST,
+		"db_port":           defaultConf.ConfDBPORT,
+		"db_user":           defaultConf.ConfDBUSER,
+		"db_pass":           defaultConf.ConfDBPASS,
+		"db_name":           defaultConf.ConfDBNAME,
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)
@@ -104,6 +102,7 @@ func init() {
 	}
 
 	Burgundy.BindPFlags(pflag.CommandLine)
+	Burgundy.Debug()
 }
 
 func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
@@ -118,6 +117,8 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 	v.AddConfigPath("../conf")
 	v.AddConfigPath("../../conf")
 	v.AddConfigPath("$HOME/.burgundy")
+
+	v.SetEnvPrefix("eosdaq")
 	v.AutomaticEnv()
 
 	switch strings.ToUpper(v.GetString("ENV")) {
