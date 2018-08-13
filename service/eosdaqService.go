@@ -5,19 +5,23 @@ import (
 	"burgundy/models"
 	"burgundy/repository"
 	"context"
+	"fmt"
 	"time"
 )
 
 type eosdaqUsecase struct {
+	contract   string
 	eosdaqRepo repository.EosdaqRepository
 	ctxTimeout time.Duration
 }
 
 // NewEosdaqService ...
 func NewEosdaqService(burgundy conf.ViperConfig,
+	contract string,
 	er repository.EosdaqRepository,
 	timeout time.Duration) (EosdaqService, error) {
 	return &eosdaqUsecase{
+		contract:   contract,
 		eosdaqRepo: er,
 		ctxTimeout: timeout,
 	}, nil
@@ -34,6 +38,9 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	// insert collection
 	// delete collection
 	// websocket broadcast
+	for _, o := range obs {
+		fmt.Printf("contract[%s] %v\n", eu.contract, o)
+	}
 
 	return
 }
@@ -43,5 +50,10 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
 	defer cancel()
 
-	return eu.eosdaqRepo.SaveTransaction(innerCtx, txs)
+	if err = eu.eosdaqRepo.SaveTransaction(innerCtx, txs); err != nil {
+		mlog.Infow("UpdateTransaction", "contract", eu.contract, "txs", txs)
+		return err
+	}
+
+	return nil
 }

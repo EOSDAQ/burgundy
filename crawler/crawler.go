@@ -24,10 +24,10 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 
 	host := burgundy.GetString("eos_host")
 	port := burgundy.GetInt("eos_port")
-	contracts := strings.Split(burgundy.GetString("eos_contract"), ",")
+	contracts := strings.Split(burgundy.GetString("eos_crawlcontract"), ",")
 
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
-	crawlTimer := time.Duration(burgundy.GetInt("eos_crawl")) * time.Millisecond
+	crawlTimer := time.Duration(burgundy.GetInt("eos_crawlMS")) * time.Millisecond
 
 	for _, c := range contracts {
 		eosnet := &eosdaq.EosNet{
