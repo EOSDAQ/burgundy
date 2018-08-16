@@ -9,7 +9,7 @@ import (
 )
 
 type Ticker struct {
-	ID              uint   `json:"id"`
+	ID              uint   `json:"id" gorm:"primary_key"`
 	TickerName      string `json:"tickerName"`
 	TokenSymbol     string `json:"tokenSymbol"`
 	BaseSymbol      string `json:"baseSymbol"`

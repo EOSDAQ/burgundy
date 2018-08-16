@@ -28,11 +28,11 @@ func init() {
 	mlog, _ = util.InitLog("crawler", "console")
 }
 
-func getTickers(db *gorm.DB) (tickers []*models.Ticker) {
-	scope := db.New()
-	scope.Find(&tickers)
-	if scope.Error != nil {
-		mlog.Errorw("getTickers error", "err", scope.Error)
+func getTickers(tickRepo _Repo.TickerRepository) (tickers []*models.Ticker) {
+	var err error
+	tickers, err = tickRepo.GetTickers(context.Background())
+	if err != nil {
+		mlog.Infow("getTickers error", "err", err)
 		return nil
 	}
 	return tickers
@@ -42,7 +42,8 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 
 	host := burgundy.GetString("eos_host")
 	port := burgundy.GetInt("eos_port")
-	tickers := getTickers(db)
+	tickerRepo := _Repo.NewGormTickerRepository(burgundy, db)
+	tickers := getTickers(tickerRepo)
 
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 	crawlTimer := time.Duration(burgundy.GetInt("eos_crawlMS")) * time.Millisecond
@@ -55,7 +56,7 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 		}
 
 		eosRepo := _Repo.NewGormEosdaqRepository(burgundy, db, t.ContractAccount)
-		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, timeout)
+		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, tickerRepo, timeout)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewSvc failed ticker[%s]", t)
 		}

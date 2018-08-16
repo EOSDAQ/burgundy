@@ -68,12 +68,19 @@ type UserRepository interface {
 	Delete(ctx context.Context, accountName string) (bool, error)
 }
 
+// EosdaqRepository ...
 type EosdaqRepository interface {
-	UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error)
 	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
 	GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error)
 	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error
 	GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error)
 	SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error
 	DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error
+}
+
+// TickerRepository ...
+type TickerRepository interface {
+	GetTickers(ctx context.Context) (ts []*models.Ticker, err error)
+	GetTicker(ctx context.Context, symbol string) (ticker *models.Ticker, err error)
+	UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error)
 }

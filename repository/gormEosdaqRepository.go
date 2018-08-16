@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"github.com/juju/errors"
 )
 
 type gormEosdaqRepository struct {
@@ -19,7 +18,6 @@ type gormEosdaqRepository struct {
 
 // NewGormEosdaqRepository ...
 func NewGormEosdaqRepository(burgundy conf.ViperConfig, Conn *gorm.DB, contract string) EosdaqRepository {
-	Conn = Conn.AutoMigrate(&models.Ticker{})
 	Conn = Conn.Table(fmt.Sprintf("%s_txs", contract)).AutoMigrate(&models.EosdaqTx{})
 	Conn = Conn.Table(fmt.Sprintf("%s_order_books", contract)).AutoMigrate(&models.OrderBook{})
 	/*
@@ -27,25 +25,11 @@ func NewGormEosdaqRepository(burgundy conf.ViperConfig, Conn *gorm.DB, contract 
 			return fmt.Sprintf("%s_%s", contract, defaultTableName)
 		}
 	*/
-	g := &gormEosdaqRepository{Conn, contract}
-	for _, t := range models.TickerInit(burgundy.GetString("eos_baseSymbol")) {
-		g.UpdateTicker(context.Background(), t)
-	}
-	return g
+	return &gormEosdaqRepository{Conn, contract}
 }
 
 func (g *gormEosdaqRepository) Table(table string) *gorm.DB {
 	return g.Conn.Table(fmt.Sprintf("%s_%s", g.Contract, table))
-}
-
-func (g *gormEosdaqRepository) UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error) {
-
-	scope := g.Conn.New()
-	scope.Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).FirstOrInit(ticker)
-	if scope.Error != nil {
-		return errors.Annotatef(scope.Error, "UpdateTicker error [%s]", ticker.TokenSymbol)
-	}
-	return nil
 }
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {

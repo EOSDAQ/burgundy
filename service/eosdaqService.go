@@ -11,6 +11,7 @@ import (
 type eosdaqUsecase struct {
 	ticker     *models.Ticker
 	eosdaqRepo repository.EosdaqRepository
+	tickerRepo repository.TickerRepository
 	ctxTimeout time.Duration
 }
 
@@ -18,19 +19,14 @@ type eosdaqUsecase struct {
 func NewEosdaqService(burgundy conf.ViperConfig,
 	t *models.Ticker,
 	er repository.EosdaqRepository,
+	tr repository.TickerRepository,
 	timeout time.Duration) (EosdaqService, error) {
 	return &eosdaqUsecase{
 		ticker:     t,
 		eosdaqRepo: er,
+		tickerRepo: tr,
 		ctxTimeout: timeout,
 	}, nil
-}
-
-func (eu eosdaqUsecase) UpdateTicker(ctx context.Context, ticker *models.Ticker) (dbtick *models.Ticker, err error) {
-	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
-	defer cancel()
-
-	return eu.UpdateTicker(innerCtx, ticker)
 }
 
 // UpdateOrderbook ...
@@ -53,7 +49,7 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	addBooks := []*models.OrderBook{}
 	for _, n := range obs {
 		if _, ok := orderMaps[n.ID]; !ok {
-			n.UpdatDBField()
+			n.UpdateDBField()
 			addBooks = append(addBooks, n)
 		} else if ok {
 			delete(orderMaps, n.ID)
@@ -126,7 +122,7 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 
 	eu.ticker.CurrentPrice = addtxs[len(addtxs)-1].Price
 	eu.ticker.Volume += addvol
-	if err = eu.eosdaqRepo.UpdateTicker(innerCtx, eu.ticker); err != nil {
+	if err = eu.tickerRepo.UpdateTicker(innerCtx, eu.ticker); err != nil {
 		mlog.Errorw("UpdateTicker", "contract", eu.ticker.ContractAccount, "ticker", eu.ticker, "err", err)
 		return err
 	}
