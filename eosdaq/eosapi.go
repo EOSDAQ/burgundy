@@ -72,7 +72,7 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 }
 
 func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
-	var res []*models.EosdaqTx
+	var res models.TxResponse
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	begin, end := uint(0), uint(0)
@@ -97,12 +97,9 @@ func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 			break
 		}
 		result = append(result, res...)
-		if begin == 0 {
-			begin = res[0].ID
-		}
-		end = res[len(res)-1].ID
+		begin, end = res.GetRange(begin, end)
 	}
-	if len(result) > 0 {
+	if len(result) > 1 {
 		mlog.Infow("delete tx ", "from", begin, "to", end)
 		e.DoAction(
 			DeleteTransaction(eos.AccountName(e.contract), begin, end),

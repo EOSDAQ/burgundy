@@ -68,6 +68,7 @@ type UserRepository interface {
 
 type EosdaqRepository interface {
 	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
+	GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error)
 	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error
 	GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error)
 	SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error

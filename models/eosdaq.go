@@ -31,6 +31,8 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+type TxResponse []*EosdaqTx
+
 // EosdaqTX ...
 type EosdaqTx struct {
 	ID                uint      `json:"id" gorm:"primary_key"`
@@ -39,12 +41,22 @@ type EosdaqTx struct {
 	MakerAsset        string    `json:"maker_asset"`
 	Taker             string    `json:"taker"`
 	TakerAsset        string    `json:"taker_asset"`
-	OrderTime         uint      `json:"ordertime"`
-	OrderTimeReadable time.Time `json:"ordertime_readable"`
+	OrderTime         int64     `json:"ordertime"`
+	OrderTimeReadable time.Time `json:"ordertime_readable" gorm:"-"`
 }
 
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}
+}
+
+func (tr TxResponse) GetRange(begin, end uint) (rb, re uint) {
+	if begin == 0 {
+		rb = tr[0].ID
+	}
+	if len(tr) > 1 {
+		re = tr[len(tr)-2].ID
+	}
+	return
 }
 
 // OrderType ...
@@ -74,7 +86,7 @@ type OrderBook struct {
 	Name              string    `json:"name"`
 	Price             int       `json:"price"`
 	Quantity          string    `json:"quantity"`
-	OrderTime         uint      `json:"ordertime"`
+	OrderTime         int64     `json:"ordertime"`
 	OrderTimeReadable time.Time `json:"ordertime_readable"`
 	Type              OrderType `json:"ordertype"`
 }

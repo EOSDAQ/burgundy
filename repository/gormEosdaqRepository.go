@@ -45,7 +45,34 @@ func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) 
 
 }
 
+func (g *gormEosdaqRepository) GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error) {
+
+	if len(txs) == 0 {
+		return nil, nil
+	}
+
+	valueArgs := []uint{}
+	for _, t := range txs {
+		valueArgs = append(valueArgs, t.ID)
+	}
+	scope := g.Table("txs").Where("id in (?)", valueArgs).Find(&dbtxs)
+	if scope.Error != nil {
+		return nil, scope.Error
+	}
+
+	if scope.RowsAffected == 0 {
+		return nil, fmt.Errorf("record not found")
+	}
+
+	return dbtxs, nil
+}
+
 func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error {
+
+	if len(txs) == 0 {
+		return nil
+	}
+
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
 
@@ -102,12 +129,12 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 }
 
 func (g *gormEosdaqRepository) DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error {
-	valueArgs := []uint{}
 
 	if len(obs) == 0 {
 		return nil
 	}
 
+	valueArgs := []uint{}
 	for _, o := range obs {
 		valueArgs = append(valueArgs, o.ID)
 	}

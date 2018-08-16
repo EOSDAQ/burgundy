@@ -41,7 +41,7 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 		mlog.Errorw("UpdateOrderbook get", "contract", eu.contract, "err", err)
 		return err
 	}
-	mlog.Infow("UpdateOrderbook db read", "cont", eu.contract, "data", orderBooks)
+	mlog.Debugw("UpdateOrderbook db read", "cont", eu.contract, "data", orderBooks)
 	orderMaps := make(map[uint]*models.OrderBook)
 	for _, o := range orderBooks {
 		orderMaps[o.ID] = o
@@ -55,7 +55,7 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 			delete(orderMaps, n.ID)
 		}
 	}
-	mlog.Infow("UpdateOrderbook db add", "cont", eu.contract, "data", addBooks)
+	mlog.Debugw("UpdateOrderbook db add", "cont", eu.contract, "data", addBooks)
 
 	// insert collection
 	if err = eu.eosdaqRepo.SaveOrderBook(innerCtx, addBooks); err != nil {
@@ -66,7 +66,7 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	for _, d := range orderMaps {
 		delBooks = append(delBooks, d)
 	}
-	mlog.Infow("UpdateOrderbook db del", "cont", eu.contract, "data", delBooks)
+	mlog.Debugw("UpdateOrderbook db del", "cont", eu.contract, "data", delBooks)
 	// delete collection
 	if err = eu.eosdaqRepo.DeleteOrderBook(innerCtx, delBooks); err != nil {
 		mlog.Errorw("UpdateOrderbook delete", "contract", eu.contract, "err", err, "del", delBooks)
@@ -87,8 +87,29 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 		return nil
 	}
 
-	if err = eu.eosdaqRepo.SaveTransaction(innerCtx, txs); err != nil {
-		mlog.Errorw("UpdateTransaction", "contract", eu.contract, "txs", txs)
+	// get db old
+	dbtxs, err := eu.eosdaqRepo.GetTransactions(innerCtx, txs)
+	if err != nil {
+		mlog.Errorw("UpdateTransactions get", "contract", eu.contract, "err", err)
+		return err
+	}
+	mlog.Debugw("UpdateTransaction db read", "cont", eu.contract, "data", dbtxs)
+	txMaps := make(map[uint]struct{})
+	for _, t := range dbtxs {
+		txMaps[t.ID] = struct{}{}
+	}
+
+	// diff txs,db
+	addtxs := []*models.EosdaqTx{}
+	for _, t := range txs {
+		if _, ok := txMaps[t.ID]; !ok {
+			addtxs = append(addtxs, t)
+		}
+	}
+	mlog.Debugw("UpdateTransactions db add", "cont", eu.contract, "data", addtxs)
+
+	if err = eu.eosdaqRepo.SaveTransaction(innerCtx, addtxs); err != nil {
+		mlog.Errorw("UpdateTransaction", "contract", eu.contract, "txs", addtxs, "err", err)
 		return err
 	}
 
