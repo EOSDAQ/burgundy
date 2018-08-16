@@ -14,7 +14,7 @@ func TestEosdaqTx_GetArgs(t *testing.T) {
 		MakerAsset: "abc",
 		Taker:      "t",
 		TakerAsset: "sys",
-		OrderTime:  Timestamp{time.Now()},
+		OrderTime:  time.Now().UnixNano(),
 	}
 	tests := []struct {
 		name string
@@ -22,7 +22,7 @@ func TestEosdaqTx_GetArgs(t *testing.T) {
 		want []interface{}
 	}{
 		// TODO: Add test cases.
-		{"normal", et, []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}},
+		{"normal", et, []interface{}{et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

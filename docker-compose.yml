@@ -11,12 +11,13 @@ services:
     depends_on:
       - eos_db
     environment:
-      - KEY=${KEY}
-      - EOS_HOST=http://local_eosio
-      - EOS_PORT=8888
-      - DB_HOST=eos_db
-      - DB_USER=eosdaquser
-      - DB_PASS=eosdaqvotmdnjem
+      - EOSDAQ_EOSSEIEOSSEI=${EOSDAQ_EOSSEIEOSSEI}
+      - EOSDAQ_DOLLARBILLGO=${EOSDAQ_DOLLARBILLGO}
+      - EOSDAQ_EOS_HOST=http://local_eosio
+      - EOSDAQ_EOS_PORT=8888
+      - EOSDAQ_DB_HOST=eos_db
+      - EOSDAQ_DB_USER=eosdaquser
+      - EOSDAQ_DB_PASS=eosdaqvotmdnjem
   db:
     ports:
       - "3306:3306"

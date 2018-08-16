@@ -56,7 +56,7 @@ func fixedFullRe(s string) string {
 
 func getTestTxs(n int) []*models.EosdaqTx {
 	ret := []*models.EosdaqTx{}
-	for i := 0; i < n; i++ {
+	for i := 1; i <= n; i++ {
 		o := &models.EosdaqTx{
 			ID:         uint(i),
 			Price:      util.RandNum(10000),
@@ -64,8 +64,9 @@ func getTestTxs(n int) []*models.EosdaqTx {
 			MakerAsset: fmt.Sprintf("%d.%d ICO", util.RandNum(1000), util.RandNum(10000)),
 			Taker:      util.RandString(12),
 			TakerAsset: fmt.Sprintf("%d.%d EOS", util.RandNum(1000), util.RandNum(10000)),
-			OrderTime:  uint(time.Now().UnixNano()),
+			OrderTime:  time.Now().UnixNano(),
 		}
+		fmt.Printf("getTestTxs [%v]\n", o)
 		ret = append(ret, o)
 	}
 
@@ -96,15 +97,16 @@ func getArgsForTxs(txs []*models.EosdaqTx) (ret []driver.Value) {
 
 func getTestOrderBooks(n int, orderType models.OrderType) []*models.OrderBook {
 	ret := []*models.OrderBook{}
-	for i := 0; i < n; i++ {
+	for i := 1; i <= n; i++ {
 		o := &models.OrderBook{
 			ID:        uint(i),
 			Name:      fmt.Sprintf("name_%d", i),
 			Price:     util.RandNum(10000),
 			Quantity:  fmt.Sprintf("%d.%d ICO", util.RandNum(1000), util.RandNum(10000)),
-			OrderTime: uint(time.Now().UnixNano()),
+			OrderTime: time.Now().UnixNano(),
 			Type:      orderType,
 		}
+		fmt.Printf("getTestOrderBooks [%v]\n", o)
 		ret = append(ret, o)
 	}
 
@@ -159,7 +161,7 @@ func TestQueries(t *testing.T) {
 func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
 	expTx := getTestTxs(1)
-	req := fmt.Sprintf(`SELECT * FROM "%s_eosdaq_txs" WHERE (id = ?) ORDER BY "%s_eosdaq_txs"."id" ASC LIMIT 1`, contract, contract)
+	req := fmt.Sprintf(`SELECT * FROM "%s_txs" WHERE (id = ?) ORDER BY "%s_txs"."id" ASC LIMIT 1`, contract, contract)
 	m.ExpectQuery(fixedFullRe(req)).
 		WillReturnRows(getRowsForTxs(expTx))
 
@@ -171,10 +173,10 @@ func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqReposito
 func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
 	expTx := getTestTxs(2)
-	smt := `INSERT INTO %s_eosdaq_tx(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
+	smt := `INSERT INTO %s_txs(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
 	valueStrings := []string{}
 	for range expTx {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?)")
 	}
 	smt = fmt.Sprintf(smt, contract, strings.Join(valueStrings, ","))
 	args := getArgsForTxs(expTx)
