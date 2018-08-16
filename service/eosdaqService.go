@@ -9,18 +9,18 @@ import (
 )
 
 type eosdaqUsecase struct {
-	contract   string
+	ticker     *models.Ticker
 	eosdaqRepo repository.EosdaqRepository
 	ctxTimeout time.Duration
 }
 
 // NewEosdaqService ...
 func NewEosdaqService(burgundy conf.ViperConfig,
-	contract string,
+	t *models.Ticker,
 	er repository.EosdaqRepository,
 	timeout time.Duration) (EosdaqService, error) {
 	return &eosdaqUsecase{
-		contract:   contract,
+		ticker:     t,
 		eosdaqRepo: er,
 		ctxTimeout: timeout,
 	}, nil
@@ -41,10 +41,10 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	// get db old
 	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, orderType)
 	if err != nil {
-		mlog.Errorw("UpdateOrderbook get", "contract", eu.contract, "err", err)
+		mlog.Errorw("UpdateOrderbook get", "contract", eu.ticker.ContractAccount, "err", err)
 		return err
 	}
-	//mlog.Debugw("UpdateOrderbook db read", "cont", eu.contract, "data", orderBooks)
+	//mlog.Debugw("UpdateOrderbook db read", "cont", eu.ticker.ContractAccount, "data", orderBooks)
 	orderMaps := make(map[uint]*models.OrderBook)
 	for _, o := range orderBooks {
 		orderMaps[o.ID] = o
@@ -58,21 +58,21 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 			delete(orderMaps, n.ID)
 		}
 	}
-	//mlog.Debugw("UpdateOrderbook db add", "cont", eu.contract, "data", addBooks)
+	//mlog.Debugw("UpdateOrderbook db add", "cont", eu.ticker.ContractAccount, "data", addBooks)
 
 	// insert collection
 	if err = eu.eosdaqRepo.SaveOrderBook(innerCtx, addBooks); err != nil {
-		mlog.Errorw("UpdateOrderbook save", "contract", eu.contract, "err", err, "add", addBooks)
+		mlog.Errorw("UpdateOrderbook save", "contract", eu.ticker.ContractAccount, "err", err, "add", addBooks)
 		return err
 	}
 	delBooks := []*models.OrderBook{}
 	for _, d := range orderMaps {
 		delBooks = append(delBooks, d)
 	}
-	//mlog.Debugw("UpdateOrderbook db del", "cont", eu.contract, "data", delBooks)
+	//mlog.Debugw("UpdateOrderbook db del", "cont", eu.ticker.ContractAccount, "data", delBooks)
 	// delete collection
 	if err = eu.eosdaqRepo.DeleteOrderBook(innerCtx, delBooks); err != nil {
-		mlog.Errorw("UpdateOrderbook delete", "contract", eu.contract, "err", err, "del", delBooks)
+		mlog.Errorw("UpdateOrderbook delete", "contract", eu.ticker.ContractAccount, "err", err, "del", delBooks)
 		return err
 	}
 
@@ -93,10 +93,10 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 	// get db old
 	dbtxs, err := eu.eosdaqRepo.GetTransactions(innerCtx, txs)
 	if err != nil && err.Error() != "record not found" {
-		mlog.Errorw("UpdateTransactions get", "contract", eu.contract, "err", err)
+		mlog.Errorw("UpdateTransactions get", "contract", eu.ticker.ContractAccount, "err", err)
 		return err
 	}
-	//mlog.Debugw("UpdateTransaction db read", "cont", eu.contract, "data", dbtxs)
+	//mlog.Debugw("UpdateTransaction db read", "cont", eu.ticker.ContractAccount, "data", dbtxs)
 	txMaps := make(map[uint]struct{})
 	for _, t := range dbtxs {
 		txMaps[t.ID] = struct{}{}
@@ -104,15 +104,28 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 
 	// diff txs,db
 	addtxs := []*models.EosdaqTx{}
+	addvol := uint(0)
 	for _, t := range txs {
 		if _, ok := txMaps[t.ID]; !ok {
 			addtxs = append(addtxs, t)
+			addvol += t.GetVolume(eu.ticker.TokenSymbol)
 		}
 	}
-	//mlog.Debugw("UpdateTransactions db add", "cont", eu.contract, "data", addtxs)
+
+	if len(addtxs) == 0 {
+		return nil
+	}
+	//mlog.Debugw("UpdateTransactions db add", "cont", eu.ticker.ContractAccount, "data", addtxs)
 
 	if err = eu.eosdaqRepo.SaveTransaction(innerCtx, addtxs); err != nil {
-		mlog.Errorw("UpdateTransaction", "contract", eu.contract, "txs", addtxs, "err", err)
+		mlog.Errorw("UpdateTransaction", "contract", eu.ticker.ContractAccount, "txs", addtxs, "err", err)
+		return err
+	}
+
+	eu.ticker.CurrentPrice = addtxs[len(addtxs)-1].Price
+	eu.ticker.Volume += addvol
+	if err = eu.eosdaqRepo.UpdateTicker(innerCtx, eu.ticker); err != nil {
+		mlog.Errorw("UpdateTicker", "contract", eu.ticker.ContractAccount, "ticker", eu.ticker, "err", err)
 		return err
 	}
 

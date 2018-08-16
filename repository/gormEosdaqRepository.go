@@ -37,14 +37,14 @@ func (g *gormEosdaqRepository) Table(table string) *gorm.DB {
 	return g.Conn.Table(fmt.Sprintf("%s_%s", g.Contract, table))
 }
 
-func (g *gormEosdaqRepository) UpdateTicker(ctx context.Context, ticker *models.Ticker) (dbtick *models.Ticker, err error) {
+func (g *gormEosdaqRepository) UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error) {
 
 	scope := g.Conn.New()
 	scope.Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).FirstOrInit(ticker)
 	if scope.Error != nil {
-		return nil, errors.Annotatef(scope.Error, "UpdateTicker error [%s]", ticker.TokenSymbol)
+		return errors.Annotatef(scope.Error, "UpdateTicker error [%s]", ticker.TokenSymbol)
 	}
-	return ticker, nil
+	return nil
 }
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {

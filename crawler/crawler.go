@@ -9,7 +9,6 @@ import (
 	"burgundy/util"
 	"context"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -29,31 +28,41 @@ func init() {
 	mlog, _ = util.InitLog("crawler", "console")
 }
 
+func getTickers(db *gorm.DB) (tickers []*models.Ticker) {
+	scope := db.New()
+	scope.Find(&tickers)
+	if scope.Error != nil {
+		mlog.Errorw("getTickers error", "err", scope.Error)
+		return nil
+	}
+	return tickers
+}
+
 func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
 
 	host := burgundy.GetString("eos_host")
 	port := burgundy.GetInt("eos_port")
-	contracts := strings.Split(burgundy.GetString("eos_crawlcontract"), ",")
+	tickers := getTickers(db)
 
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 	crawlTimer := time.Duration(burgundy.GetInt("eos_crawlMS")) * time.Millisecond
 
-	for _, c := range contracts {
-		eosnet := eosdaq.NewEosnet(host, port, c)
+	for _, t := range tickers {
+		eosnet := eosdaq.NewEosnet(host, port, t.ContractAccount)
 		api, err := eosdaq.NewAPI(burgundy, eosnet)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewAPI failed contract[%s]", c)
+			return errors.Annotatef(err, "InitModule NewAPI failed ticker[%+v]", t)
 		}
 
-		eosRepo := _Repo.NewGormEosdaqRepository(db, c)
-		eossvc, err := service.NewEosdaqService(burgundy, c, eosRepo, timeout)
+		eosRepo := _Repo.NewGormEosdaqRepository(db, t.ContractAccount)
+		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, timeout)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewSvc failed contract[%s]", c)
+			return errors.Annotatef(err, "InitModule NewSvc failed ticker[%s]", t)
 		}
 
 		err = NewCrawler(api, eossvc, crawlTimer, cancel)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewCrawler failed contract[%s]", c)
+			return errors.Annotatef(err, "InitModule NewCrawler failed ticker[%s]", t)
 		}
 	}
 

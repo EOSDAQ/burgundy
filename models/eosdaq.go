@@ -3,6 +3,7 @@ package models
 import (
 	"burgundy/util"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -98,6 +99,20 @@ type EosdaqTx struct {
 
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}
+}
+
+func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint) {
+	f, err := strconv.ParseFloat(strings.Replace(et.MakerAsset, " "+tokenSymbol, "", -1), 64)
+	fmt.Printf("first f[%f] e[%s]\n", f, err)
+	if err != nil {
+		f, err = strconv.ParseFloat(strings.Replace(et.TakerAsset, " "+tokenSymbol, "", -1), 64)
+		fmt.Printf("second f[%f] e[%s]\n", f, err)
+		if err != nil {
+			mlog.Infow("GetVolume Invalid Token", "m", et.MakerAsset, "t", et.TakerAsset, "s", tokenSymbol)
+			return 0
+		}
+	}
+	return uint(f * 10000)
 }
 
 type TxResponse []*EosdaqTx

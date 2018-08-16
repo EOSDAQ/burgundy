@@ -69,7 +69,7 @@ type UserRepository interface {
 }
 
 type EosdaqRepository interface {
-	UpdateTicker(ctx context.Context, ticker *models.Ticker) (dbtick *models.Ticker, err error)
+	UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error)
 	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
 	GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error)
 	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error
