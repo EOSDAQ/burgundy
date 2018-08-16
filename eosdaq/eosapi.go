@@ -99,7 +99,7 @@ func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 		result = append(result, res...)
 		begin, end = res.GetRange(begin, end)
 	}
-	if len(result) > 1 {
+	if len(result) > 100 {
 		mlog.Infow("delete tx ", "from", begin, "to", end)
 		e.DoAction(
 			DeleteTransaction(eos.AccountName(e.contract), begin, end),
