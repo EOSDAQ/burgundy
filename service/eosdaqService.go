@@ -89,7 +89,7 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 
 	// get db old
 	dbtxs, err := eu.eosdaqRepo.GetTransactions(innerCtx, txs)
-	if err != nil {
+	if err != nil && err.Error() != "record not found" {
 		mlog.Errorw("UpdateTransactions get", "contract", eu.contract, "err", err)
 		return err
 	}
