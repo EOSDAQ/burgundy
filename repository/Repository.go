@@ -54,7 +54,9 @@ func InitDB(burgundy conf.ViperConfig) *gorm.DB {
 		os.Exit(1)
 	}
 	dbConn.DB().SetMaxIdleConns(100)
-	//dbConn.LogMode(true)
+	if burgundy.GetString("loglevel") == "debug" {
+		dbConn.LogMode(true)
+	}
 	return dbConn
 }
 

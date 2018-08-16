@@ -40,7 +40,7 @@ func (g *gormEosdaqRepository) Table(table string) *gorm.DB {
 func (g *gormEosdaqRepository) UpdateTicker(ctx context.Context, ticker *models.Ticker) (dbtick *models.Ticker, err error) {
 
 	scope := g.Conn.New()
-	scope.Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).Save(&ticker)
+	scope.Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).FirstOrInit(ticker)
 	if scope.Error != nil {
 		return nil, errors.Annotatef(scope.Error, "UpdateTicker error [%s]", ticker.TokenSymbol)
 	}
