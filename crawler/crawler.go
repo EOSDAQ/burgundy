@@ -3,6 +3,7 @@ package crawler
 import (
 	"burgundy/conf"
 	"burgundy/eosdaq"
+	"burgundy/models"
 	_Repo "burgundy/repository"
 	"burgundy/service"
 	"burgundy/util"
@@ -73,7 +74,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Ask")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk())
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(), models.ASK)
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
@@ -81,7 +82,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Bid")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid())
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(), models.BID)
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {

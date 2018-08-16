@@ -72,16 +72,16 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 }
 
 func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
-	var res models.TxResponse
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	begin, end := uint(0), uint(0)
 	for out.More {
 		out, err = e.GetTableRows(eos.GetTableRowsRequest{
-			Scope: e.contract,
-			Code:  e.contract,
-			Table: "tx",
-			JSON:  true,
+			Scope:      e.contract,
+			Code:       e.contract,
+			LowerBound: fmt.Sprintf("%d", end+2),
+			Table:      "tx",
+			JSON:       true,
 		})
 		if err != nil {
 			mlog.Errorw("GetTx error", "contract", e.contract, "err", err)
@@ -91,13 +91,15 @@ func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 			mlog.Infow("GetTx nil", "contract", e.contract)
 			break
 		}
+		res := models.TxResponse{}
 		out.JSONToStructs(&res)
 		if len(res) == 0 {
-			mlog.Infow("GetTx nil", "contract", e.contract)
+			//mlog.Infow("GetTx nil", "contract", e.contract)
 			break
 		}
-		result = append(result, res...)
 		begin, end = res.GetRange(begin, end)
+		//mlog.Infow("GetTx ", "b", begin, "e", end)
+		result = append(result, res...)
 	}
 	if len(result) > 100 {
 		mlog.Infow("delete tx ", "from", begin, "to", end)
@@ -116,29 +118,35 @@ func (e *EosdaqAPI) GetBid() (result []*models.OrderBook) {
 }
 
 func (e *EosdaqAPI) getOrderBook(orderType models.OrderType) (result []*models.OrderBook) {
-	var res []*models.OrderBook
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
+	begin, end := uint(0), uint(0)
 	for out.More {
 		out, err = e.GetTableRows(eos.GetTableRowsRequest{
-			Scope: e.contract,
-			Code:  e.contract,
-			Table: orderType.String(),
-			JSON:  true,
+			Scope:      e.contract,
+			Code:       e.contract,
+			LowerBound: fmt.Sprintf("%d", end+1),
+			Table:      orderType.String(),
+			JSON:       true,
 		})
 		if err != nil {
 			mlog.Errorw("getOrderBook error", "contract", e.contract, "type", orderType, "err", err)
 			break
 		}
 		if out == nil {
-			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
+			//mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
 			break
 		}
+		res := []*models.OrderBook{}
 		out.JSONToStructs(&res)
 		if len(res) == 0 {
-			mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
+			//mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
 			break
 		}
+		if begin == 0 {
+			begin = res[0].ID
+		}
+		end = res[len(res)-1].ID
 		for _, r := range res {
 			r.Type = orderType
 		}

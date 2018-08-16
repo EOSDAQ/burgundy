@@ -52,9 +52,13 @@ func (et *EosdaqTx) GetArgs() []interface{} {
 func (tr TxResponse) GetRange(begin, end uint) (rb, re uint) {
 	if begin == 0 {
 		rb = tr[0].ID
+	} else {
+		rb = begin
 	}
 	if len(tr) > 1 {
 		re = tr[len(tr)-2].ID
+	} else {
+		re = end
 	}
 	return
 }
@@ -82,7 +86,8 @@ func (o OrderType) String() string {
 
 // OrderBook ...
 type OrderBook struct {
-	ID                uint      `json:"id" gorm:"primary_key"`
+	OBID              uint      `json:"obid" gorm:"primary_key"`
+	ID                uint      `json:"id"`
 	Name              string    `json:"name"`
 	Price             int       `json:"price"`
 	Quantity          string    `json:"quantity"`
