@@ -54,7 +54,7 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 			return errors.Annotatef(err, "InitModule NewAPI failed ticker[%+v]", t)
 		}
 
-		eosRepo := _Repo.NewGormEosdaqRepository(db, t.ContractAccount)
+		eosRepo := _Repo.NewGormEosdaqRepository(burgundy, db, t.ContractAccount)
 		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, timeout)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewSvc failed ticker[%s]", t)

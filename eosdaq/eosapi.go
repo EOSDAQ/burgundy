@@ -46,14 +46,18 @@ func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 		mlog.Infow("NewAPI", "acct", accResp)
 	*/
 
-	keyBag := eos.NewKeyBag()
 	keys := strings.Split(burgundy.GetString(strings.ToUpper(eosnet.contract)), ",")
-	for _, key := range keys {
-		if err := keyBag.Add(key); err != nil {
-			return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
+	if len(keys) == 0 {
+		mlog.Infow("NewAPI no keys", "contract", eosnet.contract)
+	} else {
+		keyBag := eos.NewKeyBag()
+		for _, key := range keys {
+			if err := keyBag.Add(key); err != nil {
+				return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
+			}
 		}
+		api.SetSigner(keyBag)
 	}
-	api.SetSigner(keyBag)
 
 	if burgundy.GetString("loglevel") == "debug" {
 		api.Debug = true

@@ -53,6 +53,7 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	addBooks := []*models.OrderBook{}
 	for _, n := range obs {
 		if _, ok := orderMaps[n.ID]; !ok {
+			n.UpdatDBField()
 			addBooks = append(addBooks, n)
 		} else if ok {
 			delete(orderMaps, n.ID)
@@ -107,6 +108,7 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 	addvol := uint(0)
 	for _, t := range txs {
 		if _, ok := txMaps[t.ID]; !ok {
+			t.UpdateDBField()
 			addtxs = append(addtxs, t)
 			addvol += t.GetVolume(eu.ticker.TokenSymbol)
 		}

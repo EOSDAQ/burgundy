@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Ticker struct {
-	ID              uint   `json:id"`
+	ID              uint   `json:"id"`
 	TickerName      string `json:"tickerName"`
 	TokenSymbol     string `json:"tokenSymbol"`
+	BaseSymbol      string `json:"baseSymbol"`
 	TokenAccount    string `json:"tokenAccount"`
 	ContractAccount string `json:"contractAccount"`
 	CurrentPrice    int    `json:"currentPrice"`
@@ -18,7 +20,7 @@ type Ticker struct {
 	Volume          uint   `json:"volume"`
 }
 
-func TickerInit() []*Ticker {
+func TickerInit(baseSymbol string) []*Ticker {
 	tickers := []*Ticker{
 		&Ticker{TickerName: "Everipedia", TokenSymbol: "IQ", TokenAccount: "everipediaiq"},
 		&Ticker{TickerName: "Oracle Chain", TokenSymbol: "OCT", TokenAccount: "octtothemoon"},
@@ -46,6 +48,7 @@ func TickerInit() []*Ticker {
 	for i, t := range tickers {
 		triBase := util.ConvertBase(i, 6)
 		t.ContractAccount = strings.Replace(fmt.Sprintf("eosdaq%06s", triBase), "0", "o", -1)
+		t.BaseSymbol = baseSymbol
 	}
 	return tickers
 }
@@ -73,32 +76,58 @@ func (o OrderType) String() string {
 
 // OrderBook ...
 type OrderBook struct {
-	OBID      uint      `json:"obid" gorm:"primary_key"`
-	ID        uint      `json:"id"`
-	Name      string    `json:"name"`
-	Price     int       `json:"price"`
-	Quantity  string    `json:"quantity"`
-	OrderTime string    `json:"ordertime"`
-	Type      OrderType `json:"ordertype"`
+	OBID          uint   `json:"obid" gorm:"primary_key"`
+	ID            uint   `json:"id"`
+	Name          string `json:"name"`
+	Price         int    `json:"price"`
+	Quantity      string `json:"quantity"`
+	Volume        int
+	OrderTimeJSON string    `json:"ordertime" gorm:"-"`
+	OrderTime     time.Time `json:"orderTime"`
+	Type          OrderType `json:"ordertype"`
 }
 
 func (ob *OrderBook) GetArgs() []interface{} {
-	return []interface{}{ob.ID, ob.Name, ob.Price, ob.Quantity, ob.OrderTime, ob.Type}
+	return []interface{}{ob.ID, ob.Name, ob.Price, ob.Quantity, ob.Volume, ob.OrderTime, ob.Type}
+}
+
+func (ob *OrderBook) UpdateDBField() {
+	symbol := ""
+	floatValue := 0.0
+	_, err := fmt.Sscanf(ob.Quantity, "%.4f %s", &floatValue, &symbol)
+	ob.Volume = int(floatValue * 10000)
+
+	i, err := strconv.ParseInt(ob.OrderTimeJSON, 10, 64)
+	if err != nil {
+		mlog.Errorw("UpdateDBField", "order", ob, "err", err)
+		return
+	}
+	ob.OrderTime = time.Unix(i, 0)
 }
 
 // EosdaqTX ...
 type EosdaqTx struct {
-	ID         uint   `json:"id" gorm:"primary_key"`
-	Price      int    `json:"price"`
-	Maker      string `json:"maker"`
-	MakerAsset string `json:"maker_asset"`
-	Taker      string `json:"taker"`
-	TakerAsset string `json:"taker_asset"`
-	OrderTime  string `json:"ordertime"`
+	ID            uint      `json:"id" gorm:"primary_key"`
+	Price         int       `json:"price"`
+	Maker         string    `json:"maker"`
+	MakerAsset    string    `json:"maker_asset"`
+	Taker         string    `json:"taker"`
+	TakerAsset    string    `json:"taker_asset"`
+	OrderTimeJSON string    `json:"ordertime" gorm:"-"`
+	OrderTime     time.Time `json:"orderTime"`
 }
 
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}
+}
+
+func (et *EosdaqTx) UpdateDBField() {
+	i, err := strconv.ParseInt(et.OrderTimeJSON, 10, 64)
+	if err != nil {
+		mlog.Errorw("UpdateDBField", "tx", et, "err", err)
+		return
+	}
+	et.OrderTime = time.Unix(i, 0)
 }
 
 func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint) {

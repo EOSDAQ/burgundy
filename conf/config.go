@@ -28,6 +28,7 @@ type DefaultConf struct {
 	ConfEOSAcctContract    string
 	ConfEOSCrawlContract   string
 	ConfEOSCrawlDurationMS int
+	ConfEOSBaseSymbol      string
 
 	ConfDBHOST string
 	ConfDBPORT int
@@ -49,6 +50,7 @@ var defaultConf = DefaultConf{
 	ConfEOSAcctContract:    "dollarbillgo",
 	ConfEOSCrawlContract:   "eosseieossei",
 	ConfEOSCrawlDurationMS: 500,
+	ConfEOSBaseSymbol:      "SYS",
 	ConfDBHOST:             "www.db4free.net",
 	ConfDBPORT:             3306,
 	ConfDBUSER:             "eosdaquser",
@@ -90,6 +92,7 @@ func init() {
 		"eos_acctcontract":  defaultConf.ConfEOSAcctContract,
 		"eos_crawlcontract": defaultConf.ConfEOSCrawlContract,
 		"eos_crawlMS":       defaultConf.ConfEOSCrawlDurationMS,
+		"eos_baseSymbol":    defaultConf.ConfEOSBaseSymbol,
 		"db_host":           defaultConf.ConfDBHOST,
 		"db_port":           defaultConf.ConfDBPORT,
 		"db_user":           defaultConf.ConfDBUSER,

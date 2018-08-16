@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"burgundy/conf"
 	models "burgundy/models"
 	"burgundy/util"
 	"context"
@@ -17,7 +18,7 @@ type gormEosdaqRepository struct {
 }
 
 // NewGormEosdaqRepository ...
-func NewGormEosdaqRepository(Conn *gorm.DB, contract string) EosdaqRepository {
+func NewGormEosdaqRepository(burgundy conf.ViperConfig, Conn *gorm.DB, contract string) EosdaqRepository {
 	Conn = Conn.AutoMigrate(&models.Ticker{})
 	Conn = Conn.Table(fmt.Sprintf("%s_txs", contract)).AutoMigrate(&models.EosdaqTx{})
 	Conn = Conn.Table(fmt.Sprintf("%s_order_books", contract)).AutoMigrate(&models.OrderBook{})
@@ -27,7 +28,7 @@ func NewGormEosdaqRepository(Conn *gorm.DB, contract string) EosdaqRepository {
 		}
 	*/
 	g := &gormEosdaqRepository{Conn, contract}
-	for _, t := range models.TickerInit() {
+	for _, t := range models.TickerInit(burgundy.GetString("eos_baseSymbol")) {
 		g.UpdateTicker(context.Background(), t)
 	}
 	return g
@@ -128,11 +129,11 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
 	for _, o := range obs {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
 		valueArgs = append(valueArgs, o.GetArgs()...)
 	}
 
-	smt := `INSERT INTO %s_order_books(id, name, price, quantity, order_time, type) VALUES %s`
+	smt := `INSERT INTO %s_order_books(id, name, price, quantity, volume, order_time, type) VALUES %s`
 	smt = fmt.Sprintf(smt, g.Contract, strings.Join(valueStrings, ","))
 
 	tx := g.Conn.Begin()
