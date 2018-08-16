@@ -26,6 +26,13 @@ func NewEosdaqService(burgundy conf.ViperConfig,
 	}, nil
 }
 
+func (eu eosdaqUsecase) UpdateTicker(ctx context.Context, ticker *models.Ticker) (dbtick *models.Ticker, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
+	defer cancel()
+
+	return eu.UpdateTicker(innerCtx, ticker)
+}
+
 // UpdateOrderbook ...
 func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook, orderType models.OrderType) (err error) {
 	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
