@@ -51,7 +51,9 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 		eosnet := eosdaq.NewEosnet(host, port, t.ContractAccount)
 		api, err := eosdaq.NewAPI(burgundy, eosnet)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewAPI failed token[%+v]", t)
+			mlog.Infow("InitModule error", "token", t, "err", err)
+			continue
+			//return errors.Annotatef(err, "InitModule NewAPI failed token[%+v]", t)
 		}
 
 		eosRepo := _Repo.NewGormEosdaqRepository(burgundy, db, t.ContractAccount)

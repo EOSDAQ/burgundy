@@ -32,4 +32,4 @@ COPY --from=builder /swagger.json ./
 COPY --from=builder /.env.json ./
 ENV PORT $BUILD_PORT
 EXPOSE $BUILD_PORT
-ENTRYPOINT ["/"$BUILD_PKG]
+ENTRYPOINT ["/burgundy"]
