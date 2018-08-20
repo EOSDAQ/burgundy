@@ -78,9 +78,9 @@ type EosdaqRepository interface {
 	DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error
 }
 
-// TickerRepository ...
-type TickerRepository interface {
-	GetTickers(ctx context.Context) (ts []*models.Ticker, err error)
-	GetTicker(ctx context.Context, symbol string) (ticker *models.Ticker, err error)
-	UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error)
+// TokenRepository ...
+type TokenRepository interface {
+	GetTokens(ctx context.Context) (ts []*models.Token, err error)
+	GetToken(ctx context.Context, symbol string) (token *models.Token, err error)
+	UpdateToken(ctx context.Context, token *models.Token) (err error)
 }

@@ -9,22 +9,22 @@ import (
 )
 
 type eosdaqUsecase struct {
-	ticker     *models.Ticker
+	token      *models.Token
 	eosdaqRepo repository.EosdaqRepository
-	tickerRepo repository.TickerRepository
+	tokenRepo  repository.TokenRepository
 	ctxTimeout time.Duration
 }
 
 // NewEosdaqService ...
 func NewEosdaqService(burgundy conf.ViperConfig,
-	t *models.Ticker,
+	t *models.Token,
 	er repository.EosdaqRepository,
-	tr repository.TickerRepository,
+	tr repository.TokenRepository,
 	timeout time.Duration) (EosdaqService, error) {
 	return &eosdaqUsecase{
-		ticker:     t,
+		token:      t,
 		eosdaqRepo: er,
-		tickerRepo: tr,
+		tokenRepo:  tr,
 		ctxTimeout: timeout,
 	}, nil
 }
@@ -37,10 +37,10 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	// get db old
 	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, orderType)
 	if err != nil {
-		mlog.Errorw("UpdateOrderbook get", "contract", eu.ticker.ContractAccount, "err", err)
+		mlog.Errorw("UpdateOrderbook get", "contract", eu.token.ContractAccount, "err", err)
 		return err
 	}
-	//mlog.Debugw("UpdateOrderbook db read", "cont", eu.ticker.ContractAccount, "data", orderBooks)
+	//mlog.Debugw("UpdateOrderbook db read", "cont", eu.token.ContractAccount, "data", orderBooks)
 	orderMaps := make(map[uint]*models.OrderBook)
 	for _, o := range orderBooks {
 		orderMaps[o.ID] = o
@@ -55,21 +55,21 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 			delete(orderMaps, n.ID)
 		}
 	}
-	//mlog.Debugw("UpdateOrderbook db add", "cont", eu.ticker.ContractAccount, "data", addBooks)
+	//mlog.Debugw("UpdateOrderbook db add", "cont", eu.token.ContractAccount, "data", addBooks)
 
 	// insert collection
 	if err = eu.eosdaqRepo.SaveOrderBook(innerCtx, addBooks); err != nil {
-		mlog.Errorw("UpdateOrderbook save", "contract", eu.ticker.ContractAccount, "err", err, "add", addBooks)
+		mlog.Errorw("UpdateOrderbook save", "contract", eu.token.ContractAccount, "err", err, "add", addBooks)
 		return err
 	}
 	delBooks := []*models.OrderBook{}
 	for _, d := range orderMaps {
 		delBooks = append(delBooks, d)
 	}
-	//mlog.Debugw("UpdateOrderbook db del", "cont", eu.ticker.ContractAccount, "data", delBooks)
+	//mlog.Debugw("UpdateOrderbook db del", "cont", eu.token.ContractAccount, "data", delBooks)
 	// delete collection
 	if err = eu.eosdaqRepo.DeleteOrderBook(innerCtx, delBooks); err != nil {
-		mlog.Errorw("UpdateOrderbook delete", "contract", eu.ticker.ContractAccount, "err", err, "del", delBooks)
+		mlog.Errorw("UpdateOrderbook delete", "contract", eu.token.ContractAccount, "err", err, "del", delBooks)
 		return err
 	}
 
@@ -90,10 +90,10 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 	// get db old
 	dbtxs, err := eu.eosdaqRepo.GetTransactions(innerCtx, txs)
 	if err != nil && err.Error() != "record not found" {
-		mlog.Errorw("UpdateTransactions get", "contract", eu.ticker.ContractAccount, "err", err)
+		mlog.Errorw("UpdateTransactions get", "contract", eu.token.ContractAccount, "err", err)
 		return err
 	}
-	//mlog.Debugw("UpdateTransaction db read", "cont", eu.ticker.ContractAccount, "data", dbtxs)
+	//mlog.Debugw("UpdateTransaction db read", "cont", eu.token.ContractAccount, "data", dbtxs)
 	txMaps := make(map[uint]struct{})
 	for _, t := range dbtxs {
 		txMaps[t.ID] = struct{}{}
@@ -106,24 +106,24 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 		if _, ok := txMaps[t.ID]; !ok {
 			t.UpdateDBField()
 			addtxs = append(addtxs, t)
-			addvol += t.GetVolume(eu.ticker.TokenSymbol)
+			addvol += t.GetVolume(eu.token.Symbol)
 		}
 	}
 
 	if len(addtxs) == 0 {
 		return nil
 	}
-	//mlog.Debugw("UpdateTransactions db add", "cont", eu.ticker.ContractAccount, "data", addtxs)
+	//mlog.Debugw("UpdateTransactions db add", "cont", eu.token.ContractAccount, "data", addtxs)
 
 	if err = eu.eosdaqRepo.SaveTransaction(innerCtx, addtxs); err != nil {
-		mlog.Errorw("UpdateTransaction", "contract", eu.ticker.ContractAccount, "txs", addtxs, "err", err)
+		mlog.Errorw("UpdateTransaction", "contract", eu.token.ContractAccount, "txs", addtxs, "err", err)
 		return err
 	}
 
-	eu.ticker.CurrentPrice = addtxs[len(addtxs)-1].Price
-	eu.ticker.Volume += addvol
-	if err = eu.tickerRepo.UpdateTicker(innerCtx, eu.ticker); err != nil {
-		mlog.Errorw("UpdateTicker", "contract", eu.ticker.ContractAccount, "ticker", eu.ticker, "err", err)
+	eu.token.CurrentPrice = addtxs[len(addtxs)-1].Price
+	eu.token.Volume += addvol
+	if err = eu.tokenRepo.UpdateToken(innerCtx, eu.token); err != nil {
+		mlog.Errorw("UpdateToken", "contract", eu.token.ContractAccount, "token", eu.token, "err", err)
 		return err
 	}
 

@@ -8,49 +8,49 @@ import (
 	"time"
 )
 
-type Ticker struct {
+type Token struct {
 	ID              uint   `json:"id" gorm:"primary_key"`
-	TickerName      string `json:"tickerName"`
-	TokenSymbol     string `json:"tokenSymbol"`
+	Name            string `json:"name"`
+	Symbol          string `json:"symbol"`
 	BaseSymbol      string `json:"baseSymbol"`
-	TokenAccount    string `json:"tokenAccount"`
+	Account         string `json:"account"`
 	ContractAccount string `json:"contractAccount"`
 	CurrentPrice    int    `json:"currentPrice"`
 	PrevPrice       int    `json:"prevPrice"`
 	Volume          uint   `json:"volume"`
 }
 
-func TickerInit(baseSymbol string) []*Ticker {
-	tickers := []*Ticker{
-		&Ticker{TickerName: "Everipedia", TokenSymbol: "IQ", TokenAccount: "everipediaiq"},
-		&Ticker{TickerName: "Oracle Chain", TokenSymbol: "OCT", TokenAccount: "octtothemoon"},
-		&Ticker{TickerName: "Chaince", TokenSymbol: "CET", TokenAccount: "eosiochaince"},
-		&Ticker{TickerName: "MEET.ONE", TokenSymbol: "MEETONE", TokenAccount: "eosiomeetone"},
-		&Ticker{TickerName: "eosDAC", TokenSymbol: "EOSDAC", TokenAccount: "eosdactokens"},
-		&Ticker{TickerName: "Horus Pay", TokenSymbol: "HORUS", TokenAccount: "horustokenio"},
-		&Ticker{TickerName: "KARMA", TokenSymbol: "KARMA", TokenAccount: "therealkarma"},
-		&Ticker{TickerName: "eosBlack", TokenSymbol: "BLACK", TokenAccount: "eosblackteam"},
-		&Ticker{TickerName: "EOX Commerce", TokenSymbol: "EOX", TokenAccount: "eoxeoxeoxeox"},
-		&Ticker{TickerName: "EOS Sports Bets", TokenSymbol: "ESB", TokenAccount: "esbcointoken"},
-		&Ticker{TickerName: "EVR Token", TokenSymbol: "EVR", TokenAccount: "eosvrtokenss"},
-		&Ticker{TickerName: "Atidium", TokenSymbol: "ATD", TokenAccount: "eosatidiumio"},
-		&Ticker{TickerName: "IPOS", TokenSymbol: "IPOS", TokenAccount: "oo1122334455"},
-		&Ticker{TickerName: "AdderalCoin", TokenSymbol: "ADD", TokenAccount: "eosadddddddd"},
-		&Ticker{TickerName: "iRespo", TokenSymbol: "IRESPO", TokenAccount: "irespotokens"},
-		&Ticker{TickerName: "Challenge DAC", TokenSymbol: "CHL", TokenAccount: "challengedac"},
-		&Ticker{TickerName: "EDNA", TokenSymbol: "EDNA", TokenAccount: "ednazztokens"},
-		&Ticker{TickerName: "EETH", TokenSymbol: "EETH", TokenAccount: "ethsidechain"},
-		&Ticker{TickerName: "Poorman Token", TokenSymbol: "POOR", TokenAccount: "poormantoken"},
-		&Ticker{TickerName: "RIDL", TokenSymbol: "RIDL", TokenAccount: "ridlridlcoin"},
-		&Ticker{TickerName: "TRYBE", TokenSymbol: "TRYBE", TokenAccount: "trybenetwork"},
-		&Ticker{TickerName: "WiZZ", TokenSymbol: "WIZZ", TokenAccount: "wizznetwork1"},
+func TokenInit(baseSymbol string) []*Token {
+	tokens := []*Token{
+		&Token{Name: "Everipedia", Symbol: "IQ", Account: "everipediaiq"},
+		&Token{Name: "Oracle Chain", Symbol: "OCT", Account: "octtothemoon"},
+		&Token{Name: "Chaince", Symbol: "CET", Account: "eosiochaince"},
+		&Token{Name: "MEET.ONE", Symbol: "MEETONE", Account: "eosiomeetone"},
+		&Token{Name: "eosDAC", Symbol: "EOSDAC", Account: "eosdactokens"},
+		&Token{Name: "Horus Pay", Symbol: "HORUS", Account: "horustokenio"},
+		&Token{Name: "KARMA", Symbol: "KARMA", Account: "therealkarma"},
+		&Token{Name: "eosBlack", Symbol: "BLACK", Account: "eosblackteam"},
+		&Token{Name: "EOX Commerce", Symbol: "EOX", Account: "eoxeoxeoxeox"},
+		&Token{Name: "EOS Sports Bets", Symbol: "ESB", Account: "esbcointoken"},
+		&Token{Name: "EVR Token", Symbol: "EVR", Account: "eosvrtokenss"},
+		&Token{Name: "Atidium", Symbol: "ATD", Account: "eosatidiumio"},
+		&Token{Name: "IPOS", Symbol: "IPOS", Account: "oo1122334455"},
+		&Token{Name: "AdderalCoin", Symbol: "ADD", Account: "eosadddddddd"},
+		&Token{Name: "iRespo", Symbol: "IRESPO", Account: "irespotokens"},
+		&Token{Name: "Challenge DAC", Symbol: "CHL", Account: "challengedac"},
+		&Token{Name: "EDNA", Symbol: "EDNA", Account: "ednazztokens"},
+		&Token{Name: "EETH", Symbol: "EETH", Account: "ethsidechain"},
+		&Token{Name: "Poorman Token", Symbol: "POOR", Account: "poormantoken"},
+		&Token{Name: "RIDL", Symbol: "RIDL", Account: "ridlridlcoin"},
+		&Token{Name: "TRYBE", Symbol: "TRYBE", Account: "trybenetwork"},
+		&Token{Name: "WiZZ", Symbol: "WIZZ", Account: "wizznetwork1"},
 	}
-	for i, t := range tickers {
-		triBase := util.ConvertBase(i, 6)
-		t.ContractAccount = strings.Replace(fmt.Sprintf("eosdaq%06s", triBase), "0", "o", -1)
+	for i, t := range tokens {
+		base := util.ConvertBase(i, 6)
+		t.ContractAccount = strings.Replace(fmt.Sprintf("eosdaq%06s", base), "0", "o", -1)
 		t.BaseSymbol = baseSymbol
 	}
-	return tickers
+	return tokens
 }
 
 // OrderType ...
@@ -132,16 +132,16 @@ func (et *EosdaqTx) UpdateDBField() {
 
 func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint) {
 	f, err := strconv.ParseFloat(strings.Replace(et.MakerAsset, " "+tokenSymbol, "", -1), 64)
-	fmt.Printf("first f[%f] e[%s]\n", f, err)
+	//fmt.Printf("first f[%f] e[%s]\n", f, err)
 	if err != nil {
 		f, err = strconv.ParseFloat(strings.Replace(et.TakerAsset, " "+tokenSymbol, "", -1), 64)
-		fmt.Printf("second f[%f] e[%s]\n", f, err)
+		//fmt.Printf("second f[%f] e[%s]\n", f, err)
 		if err != nil {
 			mlog.Infow("GetVolume Invalid Token", "m", et.MakerAsset, "t", et.TakerAsset, "s", tokenSymbol)
 			return 0
 		}
 	}
-	return uint(f * 10000)
+	return uint(f*100000) / 10
 }
 
 type TxResponse []*EosdaqTx
