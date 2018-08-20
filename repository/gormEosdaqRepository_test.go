@@ -40,6 +40,7 @@ func newRepo(contract string) (sqlmock.Sqlmock, EosdaqRepository) {
 
 	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
 	repo := NewGormEosdaqRepository(conf.Burgundy, gormDB, contract)
 
 	return mock, repo
@@ -79,6 +80,7 @@ func getRowsForTxs(txs []*models.EosdaqTx) *sqlmock.Rows {
 	rows := sqlmock.NewRows(txFieldNames)
 	for _, t := range txs {
 		t.UpdateDBField()
+		t.OrderTimeJSON = "" // for assert
 		rows = rows.AddRow(t.ID, t.Price, t.Maker, t.MakerAsset, t.Taker, t.TakerAsset, t.OrderTime)
 		//fmt.Printf("rows : [%v]\n", rows)
 	}
@@ -117,10 +119,11 @@ func getTestOrderBooks(n int, orderType models.OrderType) []*models.OrderBook {
 }
 
 func getRowsForOrderBooks(orderbooks []*models.OrderBook) *sqlmock.Rows {
-	var orderbookFieldNames = []string{"obid", "id", "name", "price", "quantity", "volume", "order_time", "type"}
+	var orderbookFieldNames = []string{"ob_id", "id", "name", "price", "quantity", "volume", "order_time", "type"}
 	rows := sqlmock.NewRows(orderbookFieldNames)
 	for _, o := range orderbooks {
 		o.UpdateDBField()
+		o.OrderTimeJSON = "" // for assert
 		rows = rows.AddRow(o.OBID, o.ID, o.Name, o.Price, o.Quantity, o.Volume, o.OrderTime, o.Type)
 		//fmt.Printf("rows : [%v]\n", rows)
 	}
@@ -180,7 +183,7 @@ func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository,
 	smt := `INSERT INTO %s_txs(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
 	valueStrings := []string{}
 	for range expTx {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
 	}
 	smt = fmt.Sprintf(smt, contract, strings.Join(valueStrings, ","))
 	args := getArgsForTxs(expTx)
@@ -233,10 +236,10 @@ func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, c
 func testDeleteOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
 
 	expOrderBooks := getTestOrderBooks(2, models.ASK)
-	smt := `DELETE FROM %s_order_books WHERE id IN (%s)`
+	smt := `DELETE FROM %s_order_books WHERE ob_id IN (%s)`
 	valueArgs := []uint{}
 	for _, o := range expOrderBooks {
-		valueArgs = append(valueArgs, o.ID)
+		valueArgs = append(valueArgs, o.OBID)
 	}
 	smt = fmt.Sprintf(smt, contract, util.ArrayToString(valueArgs, ","))
 
