@@ -94,15 +94,15 @@ func (ob *OrderBook) GetArgs() []interface{} {
 func (ob *OrderBook) UpdateDBField() {
 	symbol := ""
 	floatValue := 0.0
-	_, err := fmt.Sscanf(ob.Quantity, "%.4f %s", &floatValue, &symbol)
+	_, err := fmt.Sscanf(ob.Quantity, "%f %s", &floatValue, &symbol)
 	ob.Volume = int(floatValue * 10000)
 
-	i, err := strconv.ParseInt(ob.OrderTimeJSON, 10, 64)
+	i, err := strconv.ParseInt(fmt.Sprintf("%s000", ob.OrderTimeJSON), 10, 64)
 	if err != nil {
 		mlog.Errorw("UpdateDBField", "order", ob, "err", err)
 		return
 	}
-	ob.OrderTime = time.Unix(i, 0)
+	ob.OrderTime = time.Unix(0, i)
 }
 
 // EosdaqTX ...
@@ -122,12 +122,12 @@ func (et *EosdaqTx) GetArgs() []interface{} {
 }
 
 func (et *EosdaqTx) UpdateDBField() {
-	i, err := strconv.ParseInt(et.OrderTimeJSON, 10, 64)
+	i, err := strconv.ParseInt(fmt.Sprintf("%s000", et.OrderTimeJSON), 10, 64)
 	if err != nil {
 		mlog.Errorw("UpdateDBField", "tx", et, "err", err)
 		return
 	}
-	et.OrderTime = time.Unix(i, 0)
+	et.OrderTime = time.Unix(0, i)
 }
 
 func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint) {

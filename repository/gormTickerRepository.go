@@ -43,7 +43,7 @@ func (g *gormTickerRepository) GetTicker(ctx context.Context, symbol string) (ti
 func (g *gormTickerRepository) UpdateTicker(ctx context.Context, ticker *models.Ticker) (err error) {
 
 	mlog.Infow("UpdateTicker", "ticker", ticker)
-	g.Conn.Debug().Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).FirstOrInit(ticker)
+	g.Conn.Debug().Where(models.Ticker{TokenSymbol: ticker.TokenSymbol}).FirstOrCreate(ticker)
 	if g.Conn.Error != nil {
 		mlog.Errorw("UpdateTicker", "err", g.Conn.Error)
 		return errors.Annotatef(g.Conn.Error, "UpdateTicker error [%s]", ticker.TokenSymbol)

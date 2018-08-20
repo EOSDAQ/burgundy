@@ -121,7 +121,6 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 	v.AddConfigPath("../../conf")
 	v.AddConfigPath("$HOME/.burgundy")
 
-	v.SetEnvPrefix("eosdaq")
 	v.AutomaticEnv()
 
 	switch strings.ToUpper(v.GetString("ENV")) {
@@ -144,6 +143,7 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 		return ViperConfig{}, err
 	}
 
+	v.SetEnvPrefix("eosdaq")
 	return ViperConfig{v}, nil
 }
 
