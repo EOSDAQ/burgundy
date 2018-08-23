@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
-	"github.com/juju/errors"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 )
@@ -64,14 +63,14 @@ func (u *User) UpdateRegister() {
 
 func (u *User) GenerateOTPKey() (string, error) {
 	if u.OTPKey != "" {
-		return "", errors.NotValidf("Already exists OTP Key [%s]", u.AccountName)
+		return "", fmt.Errorf("Already exists OTP Key [%s]", u.AccountName)
 	}
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "eosdaq.com",
 		AccountName: u.AccountName,
 	})
 	if err != nil {
-		return "", errors.Annotatef(err, "GenerateOTPKey error[%s]", u.AccountName)
+		return "", fmt.Errorf("GenerateOTPKey account[%s] error[%s]", u.AccountName, err)
 	}
 	u.OTPKey = key.Secret()
 	return u.OTPKey, nil

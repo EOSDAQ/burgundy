@@ -43,6 +43,9 @@ func (uuc userUsecase) GetByID(ctx context.Context, accountName string) (u *mode
 	defer cancel()
 
 	u, err = uuc.userRepo.GetByID(innerCtx, accountName)
+	if err != nil {
+		return nil, err
+	}
 
 	u.EmailHash = nil
 
