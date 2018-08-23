@@ -45,7 +45,6 @@ func (uuc userUsecase) GetByID(ctx context.Context, accountName string) (u *mode
 	u, err = uuc.userRepo.GetByID(innerCtx, accountName)
 
 	u.EmailHash = nil
-	u.OTPKey = nil
 
 	return
 }
@@ -57,55 +56,10 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 
 	u, err = uuc.userRepo.Store(innerCtx, user)
 	if err != nil {
-		// To pass Already Exist
-		/*
-			mlog.Infow("userUsecase Store error", "user", user, "err", err)
-			rbErr := uuc.eosAPI.UnregisterUser(user.AccountName)
-			if rbErr != nil {
-				mlog.Infow("userUsecase register rollback error", "user", user, "err", rbErr)
-			}
-			return nil, errors.Annotatef(err, "user[%v]", user)
-		*/
-	}
-
-	u.EmailHash = nil
-	u.OTPKey = nil
-
-	return
-}
-
-// Update ...
-func (uuc userUsecase) Update(ctx context.Context, user *models.User) (u *models.User, err error) {
-	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
-	defer cancel()
-
-	dbuser, err := uuc.userRepo.GetByID(innerCtx, user.AccountName)
-	if err != nil {
 		return nil, err
 	}
 
-	dbuser.UpdateConfirm(user)
-
-	var action *eos.Action
-	if dbuser.NeedRegister() {
-		action = uuc.eosAPI.RegisterAction(dbuser.AccountName)
-	} else if dbuser.NeedUnregister() {
-		action = uuc.eosAPI.UnregisterAction(dbuser.AccountName)
-	}
-
-	if action != nil {
-		if err = uuc.eosAPI.DoAction(action); err != nil {
-			mlog.Infow("userUsecase register error", "user", dbuser, "err", err)
-			// To pass Already Exist
-		} else {
-			dbuser.UpdateRegister()
-		}
-	}
-
-	u, err = uuc.userRepo.Update(innerCtx, dbuser)
-
 	u.EmailHash = nil
-	u.OTPKey = nil
 
 	return
 }
@@ -131,4 +85,130 @@ func (uuc userUsecase) Delete(ctx context.Context, accountName string) (result b
 	}
 
 	return result, dberr
+}
+
+// ConfirmEmail ...
+func (uuc userUsecase) ConfirmEmail(ctx context.Context, accName, email, emailHash string) (u *models.User, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, accName)
+	if err != nil {
+		return nil, errors.Annotatef(err, "ConfirmEmail GetByID[%s]", accName)
+	}
+
+	if !dbuser.ConfirmEmail(email, emailHash) {
+		return nil, errors.NotValidf("ConfirmEmail Invalid Email Hash[%s]", emailHash)
+	}
+	uuc.updateContract(dbuser)
+
+	u, err = uuc.userRepo.Update(innerCtx, dbuser)
+
+	u.EmailHash = nil
+
+	return
+}
+
+// RevokeEmail ...
+func (uuc userUsecase) RevokeEmail(ctx context.Context, accName, email, emailHash string) (u *models.User, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, accName)
+	if err != nil {
+		return nil, errors.Annotatef(err, "RevokeEmail GetByID[%s]", accName)
+	}
+
+	dbuser.RevokeEmail(email, emailHash)
+	uuc.updateContract(dbuser)
+
+	u, err = uuc.userRepo.Update(innerCtx, dbuser)
+
+	u.EmailHash = nil
+
+	return
+}
+
+func (uuc userUsecase) updateContract(user *models.User) bool {
+	var action *eos.Action
+	if user.NeedRegister() {
+		action = uuc.eosAPI.RegisterAction(user.AccountName)
+	} else if user.NeedUnregister() {
+		action = uuc.eosAPI.UnregisterAction(user.AccountName)
+	}
+
+	if action == nil {
+		return false
+	}
+
+	if err := uuc.eosAPI.DoAction(action); err != nil {
+		mlog.Infow("userUsecase register error", "user", user, "err", err)
+		// To pass Already Exist
+	}
+	user.UpdateRegister()
+	return true
+}
+
+func (uuc userUsecase) GenerateOTPKey(ctx context.Context, accountName string) (key string, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, accountName)
+	if err != nil {
+		return "", errors.Annotatef(err, "GetOTPKey GetByID error[%s]", accountName)
+	}
+
+	key, err = dbuser.GenerateOTPKey()
+	if err != nil {
+		return "", errors.Annotatef(err, "GetOTPKey GenerateOTPKey error[%s]", accountName)
+	}
+	_, err = uuc.userRepo.Update(innerCtx, dbuser)
+	if err != nil {
+		return "", errors.Annotatef(err, "GetOTPKey Update error[%s]", accountName)
+	}
+
+	return key, nil
+}
+
+func (uuc userUsecase) RevokeOTP(ctx context.Context, accountName string) (err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, accountName)
+	if err != nil {
+		return errors.Annotatef(err, "RevokeOTP GetByID error[%s]", accountName)
+	}
+
+	dbuser.RemoveOTPKey()
+	uuc.updateContract(dbuser)
+
+	_, err = uuc.userRepo.Update(innerCtx, dbuser)
+	if err != nil {
+		return errors.Annotatef(err, "RevokeOTP Update error[%s]", accountName)
+	}
+
+	return nil
+}
+
+func (uuc userUsecase) ValidateOTP(ctx context.Context, accountName, code string) (ok bool, err error) {
+	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
+	defer cancel()
+
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, accountName)
+	if err != nil {
+		return false, errors.Annotatef(err, "ValidateOTP GetByID error[%s]", accountName)
+	}
+
+	if !dbuser.ValidateOTP(code) {
+		return false, errors.NotValidf("ValidateOTP invalid code[%s]", code)
+	}
+
+	if uuc.updateContract(dbuser) {
+		_, err = uuc.userRepo.Update(innerCtx, dbuser)
+		if err != nil {
+			return false, errors.Annotatef(err, "ValidateOTP Update error[%s]", accountName)
+		}
+	}
+
+	return true, nil
 }
