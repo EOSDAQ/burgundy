@@ -16,7 +16,7 @@ func (e *EosdaqAPI) UnregisterAction(account string) *eos.Action {
 func action(contract, account, action string) *eos.Action {
 	eContract := eos.AccountName(contract)
 	return &eos.Action{
-		Account: eContract,
+		Account: AN("eosdaq555555"),
 		Name:    ActN(action),
 		Authorization: []eos.PermissionLevel{
 			{Actor: eContract, Permission: PN("active")},
