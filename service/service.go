@@ -30,8 +30,16 @@ func init() {
 type UserService interface {
 	GetByID(ctx context.Context, accountName string) (*models.User, error)
 	Store(ctx context.Context, user *models.User) (*models.User, error)
-	Update(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
+
+	// Email
+	ConfirmEmail(ctx context.Context, accountName, email, emailHash string) (*models.User, error)
+	RevokeEmail(ctx context.Context, accountName, email, emailHash string) (*models.User, error)
+
+	// OTP
+	GenerateOTPKey(ctx context.Context, accountName string) (string, error)
+	RevokeOTP(ctx context.Context, accountName string) error
+	ValidateOTP(ctx context.Context, accountName, code string) (bool, error)
 }
 
 // EosdaqService ...

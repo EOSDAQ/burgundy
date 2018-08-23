@@ -34,7 +34,8 @@ func (g *gormUserRepository) GetByID(ctx context.Context, accountName string) (u
 
 func (g *gormUserRepository) Update(ctx context.Context, user *models.User) (u *models.User, err error) {
 
-	scope := g.Conn.Model(&models.User{}).Where("account_name = ?", user.AccountName).Update(user)
+	mlog.Infow("Update", "user", user)
+	scope := g.Conn.Model(&models.User{}).Where("account_name = ?", user.AccountName).Save(user)
 
 	if scope.Error != nil {
 		return nil, scope.Error

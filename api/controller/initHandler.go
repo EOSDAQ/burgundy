@@ -21,7 +21,7 @@ type (
 		TRID       string      `json:"trID"`
 		ResultCode string      `json:"resultCode"`
 		ResultMsg  string      `json:"resultMsg"`
-		ResultData interface{} `json:"resultData"`
+		ResultData interface{} `json:"resultData,omitempty"`
 	}
 )
 
@@ -67,7 +67,13 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
 
 	// /api/v1/acct/user
 	eg.POST("", handler.CreateUser)
-	eg.PUT("/:accountName", handler.UpdateUser)
 	eg.GET("/:accountName", handler.GetUser)
 	eg.DELETE("/:accountName", handler.DeleteUser)
+
+	eg.POST("/:accountName/confirmEmail", handler.ConfirmEmail)
+	eg.DELETE("/:accountName/revokeEmail", handler.RevokeEmail)
+
+	eg.POST("/:accountName/newOTP", handler.NewOTP)
+	eg.DELETE("/:accountName/revokeOTP", handler.RevokeOTP)
+	eg.POST("/:accountName/validateOTP", handler.ValidateOTP)
 }
