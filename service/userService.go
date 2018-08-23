@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	eos "github.com/eoscanada/eos-go"
 	"github.com/juju/errors"
 )
 
@@ -41,18 +42,18 @@ func (uuc userUsecase) GetByID(ctx context.Context, accountName string) (u *mode
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
 
-	return uuc.userRepo.GetByID(innerCtx, accountName)
+	u, err = uuc.userRepo.GetByID(innerCtx, accountName)
+
+	u.EmailHash = nil
+	u.OTPKey = nil
+
+	return
 }
 
 // Store ...
 func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.User, err error) {
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
-
-	if err = uuc.eosAPI.DoAction(uuc.eosAPI.RegisterAction(user.AccountName)); err != nil {
-		mlog.Infow("userUsecase register error", "user", user, "err", err)
-		// To pass Already Exist
-	}
 
 	u, err = uuc.userRepo.Store(innerCtx, user)
 	if err != nil {
@@ -67,6 +68,9 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 		*/
 	}
 
+	u.EmailHash = nil
+	u.OTPKey = nil
+
 	return
 }
 
@@ -75,7 +79,35 @@ func (uuc userUsecase) Update(ctx context.Context, user *models.User) (u *models
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
 
-	return uuc.userRepo.Update(innerCtx, user)
+	dbuser, err := uuc.userRepo.GetByID(innerCtx, user.AccountName)
+	if err != nil {
+		return nil, err
+	}
+
+	dbuser.UpdateConfirm(user)
+
+	var action *eos.Action
+	if dbuser.NeedRegister() {
+		action = uuc.eosAPI.RegisterAction(dbuser.AccountName)
+	} else if dbuser.NeedUnregister() {
+		action = uuc.eosAPI.UnregisterAction(dbuser.AccountName)
+	}
+
+	if action != nil {
+		if err = uuc.eosAPI.DoAction(action); err != nil {
+			mlog.Infow("userUsecase register error", "user", dbuser, "err", err)
+			// To pass Already Exist
+		} else {
+			dbuser.UpdateRegister()
+		}
+	}
+
+	u, err = uuc.userRepo.Update(innerCtx, dbuser)
+
+	u.EmailHash = nil
+	u.OTPKey = nil
+
+	return
 }
 
 // Delete ...

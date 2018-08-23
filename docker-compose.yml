@@ -2,7 +2,7 @@ version: '3.1'
 services:
   burgundy:
     ports:
-      - "18889:18889"
+      - "18889:1313"
     image: eosdaq/burgundy
     networks:
       - eos_net
@@ -11,8 +11,8 @@ services:
     depends_on:
       - eos_db
     environment:
-      - EOSDAQ_EOSSEIEOSSEI=${EOSDAQ_EOSSEIEOSSEI}
-      - EOSDAQ_DOLLARBILLGO=${EOSDAQ_DOLLARBILLGO}
+      - EOSDAQ_EOSDAQOOOO2O=${EOSDAQ_EOSDAQOOOO2O}
+      - EOSDAQ_EOSDAQMANAGE=${EOSDAQ_EOSDAQMANAGE}
       - EOSDAQ_EOS_HOST=http://local_eosio
       - EOSDAQ_EOS_PORT=8888
       - EOSDAQ_DB_HOST=eos_db

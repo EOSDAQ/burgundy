@@ -40,8 +40,7 @@ all: test megacheck vendor fmt vet lint swagger | $(BASE) ; $(info $(M) building
 
 .PHONY: docker
 docker: ; $(info $(M) building docker image… ) @ ## Build for docker image
-	$Q $(SUDO) docker build --cache-from eosdaq/$(PACKAGE):latest --build-arg VERSION=$(VERSION) --build-arg BUILD_DATE=$(DATE) -t eosdaq/$(PACKAGE) .
-
+	$Q $(SUDO) docker build --cache-from eosdaq/$(PACKAGE):latest --build-arg VERSION=$(VERSION) --build-arg BUILD_DATE=$(DATE) --build-arg BUILD_PKG=$(PACKAGE) --build-arg BUILD_PORT=1313 -t eosdaq/$(PACKAGE) .
 
 .PHONY: gobuild
 gobuild: ; $(info $(M) building gobuild image… ) @ ## Build for gobuild image

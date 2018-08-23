@@ -43,6 +43,18 @@ func RandString(n int) string {
 	return string(b)
 }
 
+func ConvertBase(n, base int) (s string) {
+	if n == 0 {
+		return "0"
+	}
+	marks := "0123456789ABCDEF"
+	for n > 0 {
+		s = fmt.Sprintf("%c%s", marks[n%base], s)
+		n = n / base
+	}
+	return s
+}
+
 // RandNum ...
 func RandNum(max int) int {
 	return rand.New(src).Intn(max)

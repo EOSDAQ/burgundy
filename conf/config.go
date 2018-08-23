@@ -28,6 +28,7 @@ type DefaultConf struct {
 	ConfEOSAcctContract    string
 	ConfEOSCrawlContract   string
 	ConfEOSCrawlDurationMS int
+	ConfEOSBaseSymbol      string
 
 	ConfDBHOST string
 	ConfDBPORT int
@@ -46,9 +47,10 @@ var defaultConf = DefaultConf{
 	ConfAPILOGLEVEL:        "debug",
 	ConfEOSHOST:            "http://10.100.100.2",
 	ConfEOSPORT:            18888,
-	ConfEOSAcctContract:    "dollarbillgo",
-	ConfEOSCrawlContract:   "eosseieossei",
+	ConfEOSAcctContract:    "eosdaqmanage",
+	ConfEOSCrawlContract:   "eosdaqoooo2o",
 	ConfEOSCrawlDurationMS: 500,
+	ConfEOSBaseSymbol:      "SYS",
 	ConfDBHOST:             "www.db4free.net",
 	ConfDBPORT:             3306,
 	ConfDBUSER:             "eosdaquser",
@@ -90,6 +92,7 @@ func init() {
 		"eos_acctcontract":  defaultConf.ConfEOSAcctContract,
 		"eos_crawlcontract": defaultConf.ConfEOSCrawlContract,
 		"eos_crawlMS":       defaultConf.ConfEOSCrawlDurationMS,
+		"eos_baseSymbol":    defaultConf.ConfEOSBaseSymbol,
 		"db_host":           defaultConf.ConfDBHOST,
 		"db_port":           defaultConf.ConfDBPORT,
 		"db_user":           defaultConf.ConfDBUSER,
@@ -118,7 +121,6 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 	v.AddConfigPath("../../conf")
 	v.AddConfigPath("$HOME/.burgundy")
 
-	v.SetEnvPrefix("eosdaq")
 	v.AutomaticEnv()
 
 	switch strings.ToUpper(v.GetString("ENV")) {
@@ -141,6 +143,7 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 		return ViperConfig{}, err
 	}
 
+	v.SetEnvPrefix("eosdaq")
 	return ViperConfig{v}, nil
 }
 

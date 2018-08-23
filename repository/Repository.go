@@ -54,7 +54,9 @@ func InitDB(burgundy conf.ViperConfig) *gorm.DB {
 		os.Exit(1)
 	}
 	dbConn.DB().SetMaxIdleConns(100)
-	//dbConn.LogMode(true)
+	if burgundy.GetString("loglevel") == "debug" {
+		dbConn.LogMode(true)
+	}
 	return dbConn
 }
 
@@ -66,6 +68,7 @@ type UserRepository interface {
 	Delete(ctx context.Context, accountName string) (bool, error)
 }
 
+// EosdaqRepository ...
 type EosdaqRepository interface {
 	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
 	GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error)
@@ -73,4 +76,11 @@ type EosdaqRepository interface {
 	GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error)
 	SaveOrderBook(ctx context.Context, obs []*models.OrderBook) error
 	DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error
+}
+
+// TokenRepository ...
+type TokenRepository interface {
+	GetTokens(ctx context.Context) (ts []*models.Token, err error)
+	GetToken(ctx context.Context, symbol string) (token *models.Token, err error)
+	UpdateToken(ctx context.Context, token *models.Token) (err error)
 }
