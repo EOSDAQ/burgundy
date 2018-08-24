@@ -11,15 +11,15 @@ type Transx struct {
 }
 
 // DeleteTransaction ... push action eosdaq deletetransx '[ "eosdaq", 0, 0 ]' -p eosdaq@active
-func DeleteTransaction(contract eos.AccountName, begin, end uint) *eos.Action {
+func DeleteTransaction(contract, manage eos.AccountName, begin, end uint) *eos.Action {
 	return &eos.Action{
 		Account: contract,
 		Name:    ActN("deletetransx"),
 		Authorization: []eos.PermissionLevel{
-			{Actor: contract, Permission: PN("active")},
+			{Actor: manage, Permission: PN("active")},
 		},
 		ActionData: eos.NewActionData(Transx{ //`["eosdaq",0,0]`),
-			Contract: contract,
+			Contract: manage,
 			Begin:    uint64(begin),
 			End:      uint64(end),
 		}),

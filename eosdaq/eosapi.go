@@ -25,28 +25,23 @@ type EosNet struct {
 	host     string
 	port     int
 	contract string
+	manage   string
 }
 
-func NewEosnet(host string, port int, contract string) *EosNet {
-	return &EosNet{host, port, contract}
+func NewEosnet(host string, port int, contract, manage string) *EosNet {
+	return &EosNet{host, port, contract, manage}
 }
 
 type EosdaqAPI struct {
 	*eos.API
 	contract string
+	manage   string
 }
 
 func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 	api := eos.New(fmt.Sprintf("%s:%d", eosnet.host, eosnet.port))
 
-	/*
-		infoResp, _ := api.GetInfo()
-		mlog.Infow("NewAPI", "info", infoResp)
-		accResp, _ := api.GetAccount("eosdaq")
-		mlog.Infow("NewAPI", "acct", accResp)
-	*/
-
-	keys := strings.Split(burgundy.GetString(eosnet.contract), ",")
+	keys := strings.Split(burgundy.GetString(eosnet.manage), ",")
 	if keys[0] == "" {
 		return nil, errors.Errorf("NewAPI no keys", "contract", eosnet.contract)
 	} else {
@@ -62,7 +57,7 @@ func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 	if burgundy.GetString("loglevel") == "debug" {
 		api.Debug = true
 	}
-	return &EosdaqAPI{api, eosnet.contract}, nil
+	return &EosdaqAPI{api, eosnet.contract, eosnet.manage}, nil
 }
 
 func (e *EosdaqAPI) DoAction(action *eos.Action) error {
@@ -75,15 +70,15 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
+func (e *EosdaqAPI) GetTx(start uint) (result []*models.EosdaqTx) {
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
-	begin, end := uint(0), uint(0)
+	end := start
 	for out.More {
 		out, err = e.GetTableRows(eos.GetTableRowsRequest{
 			Scope:      e.contract,
 			Code:       e.contract,
-			LowerBound: fmt.Sprintf("%d", end+2),
+			LowerBound: fmt.Sprintf("%d", end+1),
 			Table:      "tx",
 			JSON:       true,
 		})
@@ -101,17 +96,26 @@ func (e *EosdaqAPI) GetTx() (result []*models.EosdaqTx) {
 			//mlog.Infow("GetTx nil", "contract", e.contract)
 			break
 		}
-		begin, end = res.GetRange(begin, end)
+		end = res[len(res)-1].ID
+		//begin, end = res.GetRange(begin, end)
 		//mlog.Infow("GetTx ", "b", begin, "e", end)
 		result = append(result, res...)
 	}
-	if len(result) > 100 {
-		mlog.Infow("delete tx ", "from", begin, "to", end)
-		e.DoAction(
-			DeleteTransaction(eos.AccountName(e.contract), begin, end),
-		)
-	}
+	/*
+		if end-begin+1 > 100 {
+			mlog.Infow("delete tx ", "from", begin, "to", end)
+			e.DoAction(
+				DeleteTransaction(eos.AccountName(e.contract), begin, end-1),
+			)
+		}
+	*/
 	return result
+}
+
+func (e *EosdaqAPI) DelTx(from, to uint) {
+	e.DoAction(
+		DeleteTransaction(eos.AccountName(e.contract), eos.AccountName(e.manage), from, to),
+	)
 }
 
 func (e *EosdaqAPI) GetAsk() (result []*models.OrderBook) {

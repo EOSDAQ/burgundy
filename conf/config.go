@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"burgundy/util"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,7 +27,8 @@ type DefaultConf struct {
 	ConfEOSHOST            string
 	ConfEOSPORT            int
 	ConfEOSAcctContract    string
-	ConfEOSCrawlContract   string
+	ConfEOSManageContract  string
+	ConfEOSCrawlExclude    string
 	ConfEOSCrawlDurationMS int
 	ConfEOSBaseSymbol      string
 
@@ -47,8 +49,9 @@ var defaultConf = DefaultConf{
 	ConfAPILOGLEVEL:        "debug",
 	ConfEOSHOST:            "http://10.100.100.2",
 	ConfEOSPORT:            18888,
-	ConfEOSAcctContract:    "eosdaqmanage",
-	ConfEOSCrawlContract:   "eosdaqoooo2o",
+	ConfEOSAcctContract:    "eosdaq555555",
+	ConfEOSManageContract:  "eosdaqmanage",
+	ConfEOSCrawlExclude:    "",
 	ConfEOSCrawlDurationMS: 500,
 	ConfEOSBaseSymbol:      "SYS",
 	ConfDBHOST:             "www.db4free.net",
@@ -79,25 +82,36 @@ func init() {
 
 	pflag.Parse()
 
+	defaultExclude := []string{}
+	for i := 0; i < 22; i++ {
+		base := util.ConvertBase(i, 6)
+		contract := strings.Replace(fmt.Sprintf("eosdaq%06s", base), "0", "o", -1)
+		if contract == "eosdaqoooo2o" {
+			continue
+		}
+		defaultExclude = append(defaultExclude, contract)
+	}
+
 	var err error
 	Burgundy, err = readConfig(map[string]interface{}{
-		"port":              defaultConf.ConfServerPORT,
-		"timeout":           defaultConf.ConfServerTIMEOUT,
-		"logmode":           defaultConf.ConfServerLOGMODE,
-		"loglevel":          defaultConf.ConfAPILOGLEVEL,
-		"profile":           false,
-		"profilePort":       6060,
-		"eos_host":          defaultConf.ConfEOSHOST,
-		"eos_port":          defaultConf.ConfEOSPORT,
-		"eos_acctcontract":  defaultConf.ConfEOSAcctContract,
-		"eos_crawlcontract": defaultConf.ConfEOSCrawlContract,
-		"eos_crawlMS":       defaultConf.ConfEOSCrawlDurationMS,
-		"eos_baseSymbol":    defaultConf.ConfEOSBaseSymbol,
-		"db_host":           defaultConf.ConfDBHOST,
-		"db_port":           defaultConf.ConfDBPORT,
-		"db_user":           defaultConf.ConfDBUSER,
-		"db_pass":           defaultConf.ConfDBPASS,
-		"db_name":           defaultConf.ConfDBNAME,
+		"port":               defaultConf.ConfServerPORT,
+		"timeout":            defaultConf.ConfServerTIMEOUT,
+		"logmode":            defaultConf.ConfServerLOGMODE,
+		"loglevel":           defaultConf.ConfAPILOGLEVEL,
+		"profile":            false,
+		"profilePort":        6060,
+		"eos_host":           defaultConf.ConfEOSHOST,
+		"eos_port":           defaultConf.ConfEOSPORT,
+		"eos_acctcontract":   defaultConf.ConfEOSAcctContract,
+		"eos_managecontract": defaultConf.ConfEOSManageContract,
+		"eos_crawlexclude":   strings.Join(defaultExclude, ","),
+		"eos_crawlMS":        defaultConf.ConfEOSCrawlDurationMS,
+		"eos_baseSymbol":     defaultConf.ConfEOSBaseSymbol,
+		"db_host":            defaultConf.ConfDBHOST,
+		"db_port":            defaultConf.ConfDBPORT,
+		"db_user":            defaultConf.ConfDBUSER,
+		"db_pass":            defaultConf.ConfDBPASS,
+		"db_name":            defaultConf.ConfDBNAME,
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)

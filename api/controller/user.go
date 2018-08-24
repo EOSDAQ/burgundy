@@ -252,8 +252,8 @@ func (h *HTTPUserHandler) NewOTP(c echo.Context) (err error) {
 		ResultCode: "0000",
 		ResultMsg:  "Request OK",
 		ResultData: struct {
-			AccountName string
-			OTPKey      string
+			AccountName string `json:"accountName"`
+			OTPKey      string `json:"otpKey"`
 		}{
 			AccountName: accName,
 			OTPKey:      key,

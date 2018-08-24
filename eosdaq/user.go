@@ -6,23 +6,22 @@ import (
 
 // RegisterAction ... push action eosdaq enroll '[ "eosdaq" ]' -p eosdaq@active
 func (e *EosdaqAPI) RegisterAction(account string) *eos.Action {
-	return action(e.contract, account, "enroll")
+	return action(e.contract, e.manage, account, "enroll")
 }
 
 func (e *EosdaqAPI) UnregisterAction(account string) *eos.Action {
-	return action(e.contract, account, "drop")
+	return action(e.contract, e.manage, account, "drop")
 }
 
-func action(contract, account, action string) *eos.Action {
-	eContract := eos.AccountName(contract)
+func action(contract, manage, account, action string) *eos.Action {
 	return &eos.Action{
-		Account: AN("eosdaq555555"),
+		Account: AN(contract),
 		Name:    ActN(action),
 		Authorization: []eos.PermissionLevel{
-			{Actor: eContract, Permission: PN("active")},
+			{Actor: AN(manage), Permission: PN("active")},
 		},
 		ActionData: eos.NewActionData(EosdaqAction{
-			Contract: eContract,
+			Contract: AN(manage),
 			Account:  eos.AccountName(account),
 		}),
 	}

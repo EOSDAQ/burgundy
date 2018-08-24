@@ -152,10 +152,6 @@ func (tr TxResponse) GetRange(begin, end uint) (rb, re uint) {
 	} else {
 		rb = begin
 	}
-	if len(tr) > 1 {
-		re = tr[len(tr)-2].ID
-	} else {
-		re = end
-	}
+	re = tr[len(tr)-1].ID
 	return
 }

@@ -9,6 +9,7 @@ import (
 	"burgundy/util"
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -19,6 +20,11 @@ import (
 type Crawler struct {
 	api           *eosdaq.EosdaqAPI
 	EosdaqService service.EosdaqService
+}
+
+type crawlerDataHandler struct {
+	begin uint
+	end   uint
 }
 
 var mlog *zap.SugaredLogger
@@ -44,11 +50,24 @@ func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB)
 	tokenRepo := _Repo.NewGormTokenRepository(burgundy, db)
 	tokens := getTokens(tokenRepo)
 
+	crawlContract := strings.Split(burgundy.GetString("eos_crawlexclude"), ",")
+	crawlMap := make(map[string]struct{})
+	for _, c := range crawlContract {
+		if c == "" {
+			continue
+		}
+		crawlMap[c] = struct{}{}
+	}
+
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 	crawlTimer := time.Duration(burgundy.GetInt("eos_crawlMS")) * time.Millisecond
+	manageContract := burgundy.GetString("eos_managecontract")
 
 	for _, t := range tokens {
-		eosnet := eosdaq.NewEosnet(host, port, t.ContractAccount)
+		if _, ok := crawlMap[t.ContractAccount]; ok {
+			continue
+		}
+		eosnet := eosdaq.NewEosnet(host, port, t.ContractAccount, manageContract)
 		api, err := eosdaq.NewAPI(burgundy, eosnet)
 		if err != nil {
 			mlog.Infow("InitModule error", "token", t, "err", err)
@@ -98,10 +117,27 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
+		cdh := &crawlerDataHandler{uint(1), uint(0)}
 		for _ = range t.C {
 			ctx := context.Background()
-			ic.EosdaqService.UpdateTransaction(ctx, ic.api.GetTx())
+			ic.EosdaqService.UpdateTransaction(ctx, cdh.GetRangeData(ic.api))
 		}
 	}(c, d)
 	return nil
+}
+
+func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI) (result []*models.EosdaqTx) {
+	result = api.GetTx(cdh.end)
+	if len(result) == 0 {
+		return nil
+	}
+
+	cdh.end = result[len(result)-1].ID
+	if cdh.end-cdh.begin+1 >= 100 {
+		mlog.Infow("delete tx", "from", cdh.begin, "to", cdh.end)
+		api.DelTx(cdh.begin, cdh.end-1)
+		cdh.begin = cdh.end
+	}
+
+	return result
 }
