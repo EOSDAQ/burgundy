@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
+	"github.com/juju/errors"
 )
 
 type gormUserRepository struct {
@@ -21,13 +22,12 @@ func NewGormUserRepository(Conn *gorm.DB) UserRepository {
 func (g *gormUserRepository) GetByID(ctx context.Context, accountName string) (user *models.User, err error) {
 	user = &models.User{}
 	scope := g.Conn.Where("account_name = ?", accountName).First(&user)
-	if scope.Error != nil {
+	if scope.RecordNotFound() {
+		return nil, errors.UserNotFoundf("[%s]", accountName)
+	} else if scope.Error != nil {
 		return nil, scope.Error
 	}
 
-	if scope.RowsAffected == 0 {
-		return nil, fmt.Errorf("record not found")
-	}
 	return user, nil
 
 }

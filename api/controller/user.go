@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/juju/errors"
 	"github.com/labstack/echo"
 )
 
@@ -73,21 +74,13 @@ func (h *HTTPUserHandler) GetUser(c echo.Context) (err error) {
 	}
 
 	user, err := h.UserService.GetByID(ctx, accName)
-	if err != nil {
-		mlog.Infow("GetUser error ", "trID", trID, "account", accName, "err", err)
-		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
-			TRID:       trID,
-			ResultCode: "1000",
-			ResultMsg:  err.Error(),
-		})
+	if errors.IsUserNotFound(err) {
+		return response(c, http.StatusNotFound, trID, "0404", err.Error())
+	} else if err != nil {
+		return response(c, http.StatusInternalServerError, trID, "1000", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, BurgundyStatus{
-		TRID:       trID,
-		ResultCode: "0000",
-		ResultMsg:  "Request OK",
-		ResultData: user,
-	})
+	return response(c, http.StatusOK, trID, "0000", "Request OK", user)
 }
 
 // DeleteUser ..

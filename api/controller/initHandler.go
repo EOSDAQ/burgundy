@@ -77,3 +77,16 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
 	eg.DELETE("/:accountName/revokeOTP", handler.RevokeOTP)
 	eg.POST("/:accountName/validateOTP", handler.ValidateOTP)
 }
+
+func response(c echo.Context, code int, trID, errCode, errMsg string, result ...interface{}) error {
+	res := BurgundyStatus{
+		TRID:       trID,
+		ResultCode: errCode,
+		ResultMsg:  errMsg,
+	}
+
+	if result != nil {
+		res.ResultData = result[0]
+	}
+	return c.JSON(code, res)
+}
