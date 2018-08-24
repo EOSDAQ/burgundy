@@ -43,7 +43,7 @@ func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 
 	keys := strings.Split(burgundy.GetString(eosnet.manage), ",")
 	if keys[0] == "" {
-		return nil, errors.Errorf("NewAPI no keys", "contract", eosnet.contract)
+		return nil, errors.Errorf("NewAPI no keys", "contract", eosnet.manage)
 	} else {
 		keyBag := eos.NewKeyBag()
 		for _, key := range keys {

@@ -119,7 +119,6 @@ func init() {
 	}
 
 	Burgundy.BindPFlags(pflag.CommandLine)
-	Burgundy.Debug()
 }
 
 func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
@@ -141,6 +140,7 @@ func readConfig(defaults map[string]interface{}) (ViperConfig, error) {
 	case "DEVELOPMENT":
 		fmt.Println("Loading Development Environment...")
 		v.SetConfigName(defaultConf.EnvServerDEV)
+		v.Debug()
 	case "STAGE":
 		fmt.Println("Loading Stage Environment...")
 		v.SetConfigName(defaultConf.EnvServerSTAGE)
