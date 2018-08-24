@@ -18,6 +18,7 @@ import (
 	conf "burgundy/conf"
 	_Repo "burgundy/repository"
 
+	"github.com/juju/errors"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -67,7 +68,7 @@ func main() {
 	db := _Repo.InitDB(Burgundy)
 	defer db.Close()
 	if err := ct.InitHandler(Burgundy, e, db); err != nil {
-		fmt.Println("InitHandler error : ", err)
+		fmt.Println("InitHandler error : ", errors.Details(err))
 		os.Exit(1)
 	}
 

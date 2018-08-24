@@ -18,6 +18,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -36,10 +37,52 @@ func init() {
 	mlog, _ = util.InitLog("repository", "console")
 }
 
+func makeDatabase(burgundy conf.ViperConfig) {
+
+	if burgundy.GetString("db_master") == "" ||
+		burgundy.GetString("db_password") == "" {
+		return
+	}
+
+	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%d)/?charset=utf8&parseTime=True&loc=Local",
+		burgundy.GetString("db_master"),
+		burgundy.GetString("db_password"),
+		burgundy.GetString("db_host"),
+		burgundy.GetInt("db_port"),
+	)
+	masterDB, err := sql.Open("mysql", dbURI)
+	if err != nil {
+		panic(err)
+	}
+	defer masterDB.Close()
+
+	dbName := burgundy.GetString("db_name")
+	type Result struct {
+		Database string
+	}
+	var result Result
+	err = masterDB.QueryRow("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", dbName).Scan(&result)
+	fmt.Println("result[%v] err[%s]\n", result, err)
+	if err == sql.ErrNoRows {
+		username := burgundy.GetString("db_user")
+		password := burgundy.GetString("db_pass")
+		_, err = masterDB.Exec("CREATE DATABASE " + dbName)
+		if err != nil {
+			panic(err)
+		}
+		_, err = masterDB.Exec("GRANT ALL PRIVILEGES ON " + dbName + ".* To '" + username + "'@'%' IDENTIFIED BY '" + password + "'")
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // InitDB ...
 func InitDB(burgundy conf.ViperConfig) *gorm.DB {
 
 	mlog, _ = util.InitLog("repository", burgundy.GetString("logmode"))
+
+	makeDatabase(burgundy)
 
 	dbURI := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 		burgundy.GetString("db_user"),

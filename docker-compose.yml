@@ -25,7 +25,6 @@ services:
       - eos_net
     environment:
         MYSQL_ROOT_PASSWORD: eosdaqvotmdnjem
-        MYSQL_DATABASE: eosdaq
         MYSQL_USER: eosdaquser
         MYSQL_PASSWORD: eosdaqvotmdnjem
 networks:
