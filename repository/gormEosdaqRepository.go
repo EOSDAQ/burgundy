@@ -17,7 +17,7 @@ type gormEosdaqRepository struct {
 }
 
 // NewGormEosdaqRepository ...
-func NewGormEosdaqRepository(burgundy conf.ViperConfig, Conn *gorm.DB, contract string) EosdaqRepository {
+func NewGormEosdaqRepository(burgundy *conf.ViperConfig, Conn *gorm.DB, contract string) EosdaqRepository {
 	Conn = Conn.Table(fmt.Sprintf("%s_txs", contract)).AutoMigrate(&models.EosdaqTx{})
 	Conn = Conn.Table(fmt.Sprintf("%s_order_books", contract)).AutoMigrate(&models.OrderBook{})
 	/*

@@ -14,7 +14,7 @@ type gormTokenRepository struct {
 }
 
 // NewGormTokenRepository ...
-func NewGormTokenRepository(burgundy conf.ViperConfig, Conn *gorm.DB) TokenRepository {
+func NewGormTokenRepository(burgundy *conf.ViperConfig, Conn *gorm.DB) TokenRepository {
 	Conn = Conn.AutoMigrate(&models.Token{})
 	g := &gormTokenRepository{Conn}
 	for _, t := range models.TokenInit(burgundy.GetString("eos_baseSymbol")) {

@@ -12,7 +12,7 @@ services:
       - eos_db
     environment:
       - EOSDAQ_EOSDAQMANAGE=${EOSDAQ_EOSDAQMANAGE}
-      - EOSDAQ_EOS_HOST=http://local_eosio
+      - EOSDAQ_EOS_HOST=http://local_nodeos
       - EOSDAQ_EOS_PORT=8888
       - EOSDAQ_DB_HOST=eos_db
       - EOSDAQ_DB_USER=eosdaquser
@@ -25,6 +25,7 @@ services:
       - eos_net
     environment:
         MYSQL_ROOT_PASSWORD: eosdaqvotmdnjem
+        MYSQL_DATABASE: eosdaq
         MYSQL_USER: eosdaquser
         MYSQL_PASSWORD: eosdaqvotmdnjem
 networks:

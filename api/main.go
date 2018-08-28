@@ -88,7 +88,7 @@ func apiLogFile(logfile string) *os.File {
 	return f
 }
 
-func echoInit(burgundy conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
+func echoInit(burgundy *conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
 
 	// Echo instance
 	e = echo.New()
@@ -146,7 +146,7 @@ func sigInit(e *echo.Echo) chan os.Signal {
 	return sc
 }
 
-func startServer(burgundy conf.ViperConfig, e *echo.Echo) {
+func startServer(burgundy *conf.ViperConfig, e *echo.Echo) {
 	// Start Server
 	apiServer := fmt.Sprintf("0.0.0.0:%d", burgundy.GetInt("port"))
 	log.Printf("%s => Starting server listen %s\n", svrInfo, apiServer)
