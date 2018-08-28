@@ -19,7 +19,7 @@ type userUsecase struct {
 }
 
 // NewUserService ...
-func NewUserService(burgundy conf.ViperConfig,
+func NewUserService(burgundy *conf.ViperConfig,
 	ur repository.UserRepository,
 	timeout time.Duration) (UserService, error) {
 	eosapi, err := eosdaq.NewAPI(burgundy, eosdaq.NewEosnet(

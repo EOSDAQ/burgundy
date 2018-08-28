@@ -38,7 +38,7 @@ type EosdaqAPI struct {
 	manage   string
 }
 
-func NewAPI(burgundy conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
+func NewAPI(burgundy *conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
 	api := eos.New(fmt.Sprintf("%s:%d", eosnet.host, eosnet.port))
 
 	keys := strings.Split(burgundy.GetString(eosnet.manage), ",")

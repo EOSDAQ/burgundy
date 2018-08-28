@@ -32,7 +32,7 @@ func init() {
 }
 
 // InitHandler ...
-func InitHandler(burgundy conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err error) {
+func InitHandler(burgundy *conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err error) {
 
 	mlog, _ = util.InitLog("controller", burgundy.GetString("logmode"))
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second

@@ -16,7 +16,7 @@ type eosdaqUsecase struct {
 }
 
 // NewEosdaqService ...
-func NewEosdaqService(burgundy conf.ViperConfig,
+func NewEosdaqService(burgundy *conf.ViperConfig,
 	t *models.Token,
 	er repository.EosdaqRepository,
 	tr repository.TokenRepository,

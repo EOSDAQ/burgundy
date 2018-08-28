@@ -43,7 +43,7 @@ func getTokens(tokenRepo _Repo.TokenRepository) (tokens []*models.Token) {
 	return tokens
 }
 
-func InitModule(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
+func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
 
 	host := burgundy.GetString("eos_host")
 	port := burgundy.GetInt("eos_port")

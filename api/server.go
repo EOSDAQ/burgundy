@@ -10,7 +10,7 @@ import (
 	"github.com/juju/errors"
 )
 
-func prepareServer(burgundy conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) bool {
+func prepareServer(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) bool {
 
 	log, err := util.InitLog("server", burgundy.GetString("logmode"))
 	if err != nil {
