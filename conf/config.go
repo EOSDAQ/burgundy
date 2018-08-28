@@ -174,7 +174,6 @@ func readConfig(defaults map[string]interface{}) (*ViperConfig, error) {
 		return &ViperConfig{}, err
 	}
 
-	v.SetEnvPrefix("eosdaq")
 	return &ViperConfig{
 		v,
 		nil,
