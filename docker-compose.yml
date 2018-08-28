@@ -17,6 +17,7 @@ services:
       - DB_HOST=eos_db
       - DB_USER=eosdaquser
       - DB_PASS=eosdaqvotmdnjem
+      - ENV=stage
   db:
     ports:
       - "3306:3306"

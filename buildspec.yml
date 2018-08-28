@@ -12,7 +12,7 @@ phases:
     commands:
       - echo Entered the build phase...
       - echo Build started on `date` for $REPOSITORY_URI
-      - docker build --build-arg BUILD_PKG=${repository_name} --build-arg BUILD_PORT=${build_port} -t ${REPOSITORY_URI}:latest .
+      - docker build --build-arg BUILD_PKG=${repository_name} --build-arg BUILD_PORT=${build_port} --build-arg BUILD_ENV=.env.stage.json -t ${REPOSITORY_URI}:latest .
   post_build:
     commands:
       - echo Entered the post_build phase...
