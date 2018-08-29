@@ -32,6 +32,9 @@ type UserService interface {
 	Store(ctx context.Context, user *models.User) (*models.User, error)
 	Delete(ctx context.Context, accountName string) (bool, error)
 
+	// Login
+	Login(ctx context.Context, accountName, accountHash string) (*models.User, error)
+
 	// Email
 	ConfirmEmail(ctx context.Context, accountName, email, emailHash string) (*models.User, error)
 	RevokeEmail(ctx context.Context, accountName, email, emailHash string) (*models.User, error)

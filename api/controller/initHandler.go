@@ -70,6 +70,8 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
 	eg.GET("/:accountName", handler.GetUser)
 	eg.DELETE("/:accountName", handler.DeleteUser)
 
+	eg.POST("/:accountName/login", handler.Login)
+
 	eg.POST("/:accountName/confirmEmail", handler.ConfirmEmail)
 	eg.DELETE("/:accountName/revokeEmail", handler.RevokeEmail)
 
