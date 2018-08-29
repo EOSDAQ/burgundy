@@ -14,6 +14,7 @@ type secretString = string
 type User struct {
 	gorm.Model  `json:"-"`
 	AccountName string `json:"accountName" gorm:"not null;unique"`
+	AccountHash *secretString `json:"accountHash,omitempty" gorm:"not null"`
 
 	Email        string        `json:"email"`
 	EmailHash    *secretString `json:"emailHash,omitempty"`
@@ -26,6 +27,10 @@ type User struct {
 
 func (u *User) String() string {
 	return fmt.Sprintf("AccountName[%s] Email[%s]", u.AccountName, u.Email)
+}
+
+func (u *User) Login(hash string) bool {
+	return string(*u.AccountHash) == hash
 }
 
 func (u *User) ConfirmEmail(email, emailHash string) bool {

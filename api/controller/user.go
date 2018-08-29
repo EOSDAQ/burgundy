@@ -18,7 +18,7 @@ func (h *HTTPUserHandler) CreateUser(c echo.Context) (err error) {
 		OTPConfirm:   false,
 	}
 	if err = c.Bind(user); err != nil {
-		mlog.Infow("CreateUser bind error ", "trID", trID, "req", *user, "err", err)
+		mlog.Errorw("CreateUser bind error ", "trID", trID, "req", *user, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -26,10 +26,10 @@ func (h *HTTPUserHandler) CreateUser(c echo.Context) (err error) {
 		})
 	}
 
-	mlog.Infow("CreateUser ", "trID", trID, "req", user)
+	mlog.Debugw("CreateUser ", "trID", trID, "req", user)
 
 	if !user.Validate() {
-		mlog.Infow("CreateUser Invalid data", "trID", trID, "req", *user)
+		mlog.Errorw("CreateUser Invalid data", "trID", trID, "req", *user)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -44,7 +44,7 @@ func (h *HTTPUserHandler) CreateUser(c echo.Context) (err error) {
 
 	saveUser, err := h.UserService.Store(ctx, user)
 	if err != nil {
-		mlog.Infow("CreateUser error ", "trID", trID, "req", *user, "err", err)
+		mlog.Errorw("CreateUser error ", "trID", trID, "req", *user, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -66,7 +66,7 @@ func (h *HTTPUserHandler) GetUser(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
 
-	mlog.Infow("GetUser ", "trID", trID, "account", accName)
+	mlog.Debugw("GetUser ", "trID", trID, "account", accName)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -89,7 +89,7 @@ func (h *HTTPUserHandler) DeleteUser(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
 
-	mlog.Infow("DeleteUser ", "trID", trID, "account", accName)
+	mlog.Debugw("DeleteUser ", "trID", trID, "account", accName)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -98,7 +98,7 @@ func (h *HTTPUserHandler) DeleteUser(c echo.Context) (err error) {
 
 	result, err := h.UserService.Delete(ctx, accName)
 	if !result || err != nil {
-		mlog.Infow("DeleteUser error ", "trID", trID, "account", accName, "err", err)
+		mlog.Errorw("DeleteUser error ", "trID", trID, "account", accName, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -111,6 +111,60 @@ func (h *HTTPUserHandler) DeleteUser(c echo.Context) (err error) {
 		ResultCode: "0000",
 		ResultMsg:  "Request OK",
 		ResultData: accName,
+	})
+}
+
+// Login ...
+func (h *HTTPUserHandler) Login(c echo.Context) (err error) {
+	type LoginRequest struct {
+		AccountHash string `json:"accountHash"`
+	}
+
+	trID := c.Response().Header().Get(echo.HeaderXRequestID)
+
+	accName := c.Param("accountName")
+	req := &LoginRequest{}
+
+	if err = c.Bind(req); err != nil {
+		mlog.Errorw("Login bind error ", "trID", trID, "req", *req, "err", err)
+		return c.JSON(http.StatusBadRequest, BurgundyStatus{
+			TRID:       trID,
+			ResultCode: "1101",
+			ResultMsg:  "Invalid Parameter",
+		})
+	}
+
+	if accName == "" || req.AccountHash == "" {
+		mlog.Errorw("Login error ", "trID", trID, "accName", accName, "hash", req.AccountHash)
+		return c.JSON(http.StatusBadRequest, BurgundyStatus{
+			TRID:       trID,
+			ResultCode: "1101",
+			ResultMsg:  "Invalid Parameter",
+		})
+	}
+
+	mlog.Debugw("Login ", "trID", trID, "accName", accName, "accHash", req.AccountHash)
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	user, err := h.UserService.Login(ctx, accName, req.AccountHash)
+	if err != nil {
+		mlog.Errorw("Login error ", "trID", trID, "accName", accName, "err", err)
+		return c.JSON(http.StatusBadRequest, BurgundyStatus{
+			TRID:       trID,
+			ResultCode: "1101",
+			ResultMsg:  err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, BurgundyStatus{
+		TRID:       trID,
+		ResultCode: "0000",
+		ResultMsg:  "Request OK",
+		ResultData: user,
 	})
 }
 
@@ -127,7 +181,7 @@ func (h *HTTPUserHandler) ConfirmEmail(c echo.Context) (err error) {
 	req := &EmailRequest{}
 
 	if err = c.Bind(req); err != nil {
-		mlog.Infow("ConfirmEmail bind error ", "trID", trID, "req", *req, "err", err)
+		mlog.Errorw("ConfirmEmail bind error ", "trID", trID, "req", *req, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -136,7 +190,7 @@ func (h *HTTPUserHandler) ConfirmEmail(c echo.Context) (err error) {
 	}
 
 	if accName == "" || req.Email == "" || req.EmailHash == "" {
-		mlog.Infow("ConfirmEmail error ", "trID", trID, "accName", accName, "email", req.Email, "emailHash", req.EmailHash)
+		mlog.Errorw("ConfirmEmail error ", "trID", trID, "accName", accName, "email", req.Email, "emailHash", req.EmailHash)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -144,7 +198,7 @@ func (h *HTTPUserHandler) ConfirmEmail(c echo.Context) (err error) {
 		})
 	}
 
-	mlog.Infow("ConfirmEmail ", "trID", trID, "accName", accName, "email", req.Email, "emailHash", req.EmailHash)
+	mlog.Debugw("ConfirmEmail ", "trID", trID, "accName", accName, "email", req.Email, "emailHash", req.EmailHash)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -153,7 +207,7 @@ func (h *HTTPUserHandler) ConfirmEmail(c echo.Context) (err error) {
 
 	saveUser, err := h.UserService.ConfirmEmail(ctx, accName, req.Email, req.EmailHash)
 	if err != nil {
-		mlog.Infow("ConfirmEmail error ", "trID", trID, "accName", accName, "err", err)
+		mlog.Errorw("ConfirmEmail error ", "trID", trID, "accName", accName, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -177,7 +231,7 @@ func (h *HTTPUserHandler) RevokeEmail(c echo.Context) (err error) {
 	req := &EmailRequest{}
 
 	if err = c.Bind(req); err != nil {
-		mlog.Infow("ConfirmEmail bind error ", "trID", trID, "req", *req, "err", err)
+		mlog.Errorw("ConfirmEmail bind error ", "trID", trID, "req", *req, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -186,7 +240,7 @@ func (h *HTTPUserHandler) RevokeEmail(c echo.Context) (err error) {
 	}
 
 	if accName == "" || req.EmailHash == "" {
-		mlog.Infow("RevokeEmail error ", "trID", trID, "accName", accName, "emailHash", req.EmailHash)
+		mlog.Errorw("RevokeEmail error ", "trID", trID, "accName", accName, "emailHash", req.EmailHash)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -194,7 +248,7 @@ func (h *HTTPUserHandler) RevokeEmail(c echo.Context) (err error) {
 		})
 	}
 
-	mlog.Infow("RevokeEmail ", "trID", trID, "accName", accName, "emailHash", req.EmailHash)
+	mlog.Debugw("RevokeEmail ", "trID", trID, "accName", accName, "emailHash", req.EmailHash)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -203,7 +257,7 @@ func (h *HTTPUserHandler) RevokeEmail(c echo.Context) (err error) {
 
 	revokeUser, err := h.UserService.RevokeEmail(ctx, accName, req.Email, req.EmailHash)
 	if err != nil {
-		mlog.Infow("RevokeEmail error ", "trID", trID, "accName", accName, "err", err)
+		mlog.Errorw("RevokeEmail error ", "trID", trID, "accName", accName, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -223,7 +277,7 @@ func (h *HTTPUserHandler) NewOTP(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
 
-	mlog.Infow("NewOTP ", "trID", trID, "account", accName)
+	mlog.Debugw("NewOTP ", "trID", trID, "account", accName)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -232,7 +286,7 @@ func (h *HTTPUserHandler) NewOTP(c echo.Context) (err error) {
 
 	key, err := h.UserService.GenerateOTPKey(ctx, accName)
 	if key == "" || err != nil {
-		mlog.Infow("NewOTP error ", "trID", trID, "account", accName, "err", err)
+		mlog.Errorw("NewOTP error ", "trID", trID, "account", accName, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -258,7 +312,7 @@ func (h *HTTPUserHandler) RevokeOTP(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
 
-	mlog.Infow("RevokeOTP ", "trID", trID, "account", accName)
+	mlog.Debugw("RevokeOTP ", "trID", trID, "account", accName)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -267,7 +321,7 @@ func (h *HTTPUserHandler) RevokeOTP(c echo.Context) (err error) {
 
 	err = h.UserService.RevokeOTP(ctx, accName)
 	if err != nil {
-		mlog.Infow("RevokeOTP error ", "trID", trID, "account", accName, "err", err)
+		mlog.Errorw("RevokeOTP error ", "trID", trID, "account", accName, "err", err)
 		return c.JSON(http.StatusInternalServerError, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1000",
@@ -287,7 +341,7 @@ func (h *HTTPUserHandler) ValidateOTP(c echo.Context) (err error) {
 	accName := c.Param("accountName")
 	code := c.FormValue("code")
 
-	mlog.Infow("ValidateOTP ", "trID", trID, "account", accName)
+	mlog.Debugw("ValidateOTP ", "trID", trID, "account", accName)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
@@ -296,7 +350,7 @@ func (h *HTTPUserHandler) ValidateOTP(c echo.Context) (err error) {
 
 	ok, err := h.UserService.ValidateOTP(ctx, accName, code)
 	if !ok {
-		mlog.Infow("ValidateOTP error ", "trID", trID, "account", accName, "err", err)
+		mlog.Errorw("ValidateOTP error ", "trID", trID, "account", accName, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
