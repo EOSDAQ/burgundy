@@ -70,7 +70,11 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetTx(start uint) (result []*models.EosdaqTx) {
+func (e *EosdaqAPI) GetActions(start uint) (result []*models.EosdaqTx) {
+	return nil
+}
+
+func (e *EosdaqAPI) GetTx(start int64) (result []*models.EosdaqTx) {
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	end := start
@@ -97,18 +101,8 @@ func (e *EosdaqAPI) GetTx(start uint) (result []*models.EosdaqTx) {
 			break
 		}
 		end = res[len(res)-1].ID
-		//begin, end = res.GetRange(begin, end)
-		//mlog.Infow("GetTx ", "b", begin, "e", end)
 		result = append(result, res...)
 	}
-	/*
-		if end-begin+1 > 100 {
-			mlog.Infow("delete tx ", "from", begin, "to", end)
-			e.DoAction(
-				DeleteTransaction(eos.AccountName(e.contract), begin, end-1),
-			)
-		}
-	*/
 	return result
 }
 
