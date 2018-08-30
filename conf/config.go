@@ -170,8 +170,11 @@ func readConfig(defaults map[string]interface{}) (*ViperConfig, error) {
 	}
 
 	err := v.ReadInConfig()
-	if err != nil {
+	switch err.(type) {
+	default:
 		return &ViperConfig{}, err
+	case viper.ConfigFileNotFoundError:
+		fmt.Printf("Warn: %s\n", err)
 	}
 
 	return &ViperConfig{
