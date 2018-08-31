@@ -3,6 +3,7 @@ package models
 import (
 	"burgundy/util"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 )
 
 var eossysAccount map[string]struct{}
+var quantPattern *regexp.Regexp
 
 func init() {
 	eossysAccount = make(map[string]struct{})
@@ -28,6 +30,7 @@ func init() {
 	for _, a := range accounts {
 		eossysAccount[a] = struct{}{}
 	}
+	quantPattern, _ = regexp.Compile("(\\d+\\.\\d{4}) ([A-Z]+)")
 }
 
 type Token struct {
@@ -147,15 +150,21 @@ type ContractData struct {
 	Memo     string `json:"memo"`
 }
 
-func (cd *ContractData) Parse(contract string) (r *ParseData) {
+func (cd *ContractData) Parse(token string) (r *EOSData) {
 
-	floatValue := 0.0
-	_, err := fmt.Sscanf(cd.Quantity, "%f %s", &floatValue, &r.Symbol)
+	r = &EOSData{}
+	var err error
+	matched := quantPattern.FindAllStringSubmatch(cd.Quantity, -1)
+	if len(matched) != 1 {
+		mlog.Infow("ContractData Parse", "data", cd, "err", "Invalid Quantity Format")
+		return nil
+	}
+	r.Volume, err = util.ParseEosFloat(matched[0][1])
 	if err != nil {
 		mlog.Infow("ContractData Parse", "data", cd, "err", err)
 		return nil
 	}
-	r.Volume = uint64(floatValue*100000) / 10
+	r.Symbol = matched[0][2]
 
 	var ok bool
 	if _, ok = eossysAccount[cd.From]; ok {
@@ -165,22 +174,41 @@ func (cd *ContractData) Parse(contract string) (r *ParseData) {
 		return nil
 	}
 
-	memos := strings.Split("@", cd.Memo)
-	if contract == cd.From {
+	memos := strings.Split(cd.Memo, "@")
+	strPrice := ""
+	switch memos[0] {
+	case "matched":
+		r.Type = MATCH
+		strPrice = memos[1]
+	case "cancel":
+		r.Type = CANCEL
+		strPrice = memos[1]
+	case "refund":
+		r.Type = REFUND
+		strPrice = "0.0"
+	default:
+		if r.Symbol == token {
+			r.Type = ASK
+		} else {
+			r.Type = BID
+		}
+		strPrice = memos[0]
 	}
-	// contract to account?
-	// Y: type & price parsing
-	// N: price parsing
 
-	// Quantity parsing
-	// volume & symbol
-	r.AccountName = "newro"
-	r.Volume = 0
-	r.Symbol = "ABC"
-	r.Type = ASK
-	r.Price = 10
+	r.Price, err = util.ParseEosFloat(strPrice)
+	if err != nil {
+		mlog.Infow("ContractData Parse", "data", cd, "err", err)
+		return nil
+	}
 
-	return
+	switch r.Type {
+	case BID, ASK:
+		r.AccountName = cd.From
+	default:
+		r.AccountName = cd.To
+	}
+
+	return r
 }
 
 // EosdaqTX ...
@@ -189,10 +217,10 @@ type EosdaqTx struct {
 	OrderTime     eos.JSONTime `json:"block_time"`
 	TransactionID []byte       `json:"trx_id"`
 
-	ParseData
+	EOSData
 }
 
-type ParseData struct {
+type EOSData struct {
 	// for Backend DB
 	AccountName string
 	Volume      uint64
@@ -214,11 +242,11 @@ func (et *EosdaqTx) GetArgs() []interface{} {
 	}
 }
 
-func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint) {
+func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint64) {
 	if et.Symbol == tokenSymbol {
 		return et.Volume
 	}
-	return 0
+	return uint64(0)
 }
 
 type TxResponse []*EosdaqTx
