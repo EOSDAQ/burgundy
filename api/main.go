@@ -103,6 +103,12 @@ func echoInit(burgundy *conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.POST, echo.GET, echo.PUT, echo.DELETE},
 	}))
+	if jwtkey := burgundy.GetString("jwt_access_key"); jwtkey != "" {
+		e.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			SigningKey:  []byte(jwtkey),
+			TokenLookup: "header:Authorization",
+		}))
+	}
 
 	// Ping Check
 	e.GET("/", func(c echo.Context) error { return c.String(http.StatusOK, "burgundy API Alive!\n") })
