@@ -1,1 +1,1 @@
-docker stack deploy -c docker-compose.yml eos
+docker-compose up -d 

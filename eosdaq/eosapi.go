@@ -70,8 +70,45 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetActions(start int64) (result []*models.EosdaqTx) {
-	return []*models.EosdaqTx{}
+func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.EosdaqTx) {
+	var err error
+	out := &eos.ActionsResp{}
+	end := start
+	out, err = e.GetActions(eos.GetActionsRequest{
+		AccountName: AN(e.contract),
+		Pos:         start + 1,
+		Offset:      int64(100),
+	})
+	if err != nil {
+		mlog.Errorw("GetActions error", "contract", e.contract, "err", err)
+		return nil
+	}
+	if out == nil {
+		mlog.Debugw("GetActions nil", "contract", e.contract)
+		return nil
+	}
+	for _, o := range out.Actions {
+		res := &models.EosdaqTx{
+			ID:            o.AccountSeq,
+			OrderTime:     o.BlockTime,
+			TransactionID: o.Trace.TransactionID,
+		}
+		if o.Trace.Action.ActionData.Data == nil {
+			mlog.Debugw("GetActions nil data", "action", res)
+			continue
+		}
+		cd := &models.ContractData{}
+		res.EOSData = cd.MarshalData(token, o.Trace.Action.ActionData.Data)
+		if res.EOSData == nil {
+			mlog.Debugw("GetActions nil data", "action", o.Trace.Action.ActionData)
+			continue
+		}
+		if end < res.ID {
+			end = res.ID
+		}
+		result = append(result, res)
+	}
+	return result
 }
 
 func (e *EosdaqAPI) GetTx(start int64) (result []*models.EosdaqTx) {

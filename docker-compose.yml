@@ -4,14 +4,15 @@ services:
     ports:
       - "18889:1313"
     image: eosdaq/burgundy
+    container_name: eos_burgundy
     networks:
       - eos_net
     depends_on:
       - db
     environment:
       - EOSDAQMANAGE=${EOSDAQMANAGE}
-      - EOS_HOST=http://127.0.0.1
-      - EOS_PORT=18888
+      - EOS_HOST=http://local_nodeos
+      - EOS_PORT=8888
       - DB_HOST=eos_db
       - DB_USER=eosdaquser
       - DB_PASS=eosdaqvotmdnjem
@@ -20,6 +21,7 @@ services:
     ports:
       - "3306:3306"
     image: mariadb
+    container_name: eos_db
     networks:
       - eos_net
     environment:

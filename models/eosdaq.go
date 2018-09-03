@@ -98,9 +98,9 @@ func (o OrderType) String() string {
 	case NONE:
 		return ""
 	case ASK:
-		return "ask"
+		return "stask"
 	case BID:
-		return "bid"
+		return "stbid"
 	case MATCH:
 		return "matched"
 	case CANCEL:
@@ -150,6 +150,18 @@ type ContractData struct {
 	Memo     string `json:"memo"`
 }
 
+func (cd *ContractData) MarshalData(token string, data interface{}) (r *EOSData) {
+	src, ok := data.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	cd.From = src["from"].(string)
+	cd.To = src["to"].(string)
+	cd.Quantity = src["quantity"].(string)
+	cd.Memo = src["memo"].(string)
+	return cd.Parse(token)
+}
+
 func (cd *ContractData) Parse(token string) (r *EOSData) {
 
 	r = &EOSData{}
@@ -177,7 +189,7 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 	memos := strings.Split(cd.Memo, "@")
 	strPrice := ""
 	switch memos[0] {
-	case "matched":
+	case "match":
 		r.Type = MATCH
 		strPrice = memos[1]
 	case "cancel":
@@ -217,7 +229,7 @@ type EosdaqTx struct {
 	OrderTime     eos.JSONTime `json:"block_time"`
 	TransactionID []byte       `json:"trx_id"`
 
-	EOSData
+	*EOSData
 }
 
 type EOSData struct {

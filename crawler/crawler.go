@@ -20,6 +20,7 @@ import (
 type Crawler struct {
 	api           *eosdaq.EosdaqAPI
 	EosdaqService service.EosdaqService
+	token         string
 }
 
 type crawlerDataHandler struct {
@@ -81,7 +82,7 @@ func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB
 			return errors.Annotatef(err, "InitModule NewSvc failed token[%s]", t)
 		}
 
-		err = NewCrawler(api, eossvc, crawlTimer, cancel)
+		err = NewCrawler(api, eossvc, t.Symbol, crawlTimer, cancel)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewCrawler failed token[%s]", t)
 		}
@@ -90,10 +91,12 @@ func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB
 	return nil
 }
 
-func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, d time.Duration, cancel <-chan os.Signal) error {
+func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, token string,
+	d time.Duration, cancel <-chan os.Signal) error {
 	c := &Crawler{
 		api:           api,
 		EosdaqService: eosdaq,
+		token:         token,
 	}
 	return c.runCrawler(d, cancel)
 }
@@ -120,14 +123,14 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		cdh := &crawlerDataHandler{int64(1), int64(0)}
 		for _ = range t.C {
 			ctx := context.Background()
-			ic.EosdaqService.UpdateTransaction(ctx, cdh.GetRangeData(ic.api))
+			ic.EosdaqService.UpdateTransaction(ctx, cdh.GetRangeData(ic.api, ic.token))
 		}
 	}(c, d)
 	return nil
 }
 
-func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI) (result []*models.EosdaqTx) {
-	result = api.GetActions(cdh.end)
+func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI, token string) (result []*models.EosdaqTx) {
+	result = api.GetActionTxs(cdh.end, token)
 	if len(result) == 0 {
 		return nil
 	}
