@@ -42,6 +42,7 @@ type DefaultConf struct {
 	ConfDBPASS string
 	ConfDBNAME string
 
+	ConfAWSOn     bool
 	ConfAWSRegion string
 }
 
@@ -65,6 +66,7 @@ var defaultConf = DefaultConf{
 	ConfDBUSER:             "eosdaquser",
 	ConfDBPASS:             "eosdaqvotmdnjem",
 	ConfDBNAME:             "eosdaq",
+	ConfAWSOn:              false,
 	ConfAWSRegion:          "ap-northeast-2",
 }
 
@@ -123,7 +125,8 @@ func init() {
 		"db_pass":            defaultConf.ConfDBPASS,
 		"db_name":            defaultConf.ConfDBNAME,
 		"aws_region":         defaultConf.ConfAWSRegion,
-		"env":                "production",
+		"aws_on":             defaultConf.ConfAWSOn,
+		"env":                "prod",
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)
@@ -172,7 +175,10 @@ func readConfig(defaults map[string]interface{}) (*ViperConfig, error) {
 	err := v.ReadInConfig()
 	switch err.(type) {
 	default:
+		fmt.Println("error ", err)
 		return &ViperConfig{}, err
+	case nil:
+		break
 	case viper.ConfigFileNotFoundError:
 		fmt.Printf("Warn: %s\n", err)
 	}
@@ -203,17 +209,21 @@ func (vp *ViperConfig) GetString(key string) string {
 	if v, ok := vp.cacheString[key]; ok {
 		return v
 	}
-	keyname := fmt.Sprintf("/eosdaq/%s/%s", vp.Viper.GetString("ENV"), key)
-	withDecryption := true
-	param, err := vp.ssmsvc.GetParameter(&ssm.GetParameterInput{
-		Name:           &keyname,
-		WithDecryption: &withDecryption,
-	})
-	if err != nil {
-		fmt.Printf("GetString cannot get parameter keyname[%s] err[%s]\n", keyname, err)
+	if !vp.Viper.GetBool("aws_on") {
 		vp.cacheString[key] = vp.Viper.GetString(key)
 	} else {
-		vp.cacheString[key] = *param.Parameter.Value
+		keyname := fmt.Sprintf("/eosdaq/%s/%s", vp.Viper.GetString("ENV"), key)
+		withDecryption := true
+		param, err := vp.ssmsvc.GetParameter(&ssm.GetParameterInput{
+			Name:           &keyname,
+			WithDecryption: &withDecryption,
+		})
+		if err != nil {
+			fmt.Printf("GetString cannot get parameter keyname[%s] err[%s]\n", keyname, err)
+			vp.cacheString[key] = vp.Viper.GetString(key)
+		} else {
+			vp.cacheString[key] = *param.Parameter.Value
+		}
 	}
 	return vp.cacheString[key]
 }
@@ -222,22 +232,26 @@ func (vp *ViperConfig) GetInt(key string) int {
 	if v, ok := vp.cacheInt[key]; ok {
 		return v
 	}
-	keyname := fmt.Sprintf("/eosdaq/%s/%s", vp.Viper.GetString("ENV"), key)
-	withDecryption := true
-	param, err := vp.ssmsvc.GetParameter(&ssm.GetParameterInput{
-		Name:           &keyname,
-		WithDecryption: &withDecryption,
-	})
-	if err != nil {
-		fmt.Printf("GetInt cannot get parameter keyname[%s] err[%s]\n", keyname, err)
+	if !vp.Viper.GetBool("aws_on") {
 		vp.cacheInt[key] = vp.Viper.GetInt(key)
 	} else {
-		v, err := strconv.Atoi(*param.Parameter.Value)
+		keyname := fmt.Sprintf("/eosdaq/%s/%s", vp.Viper.GetString("ENV"), key)
+		withDecryption := true
+		param, err := vp.ssmsvc.GetParameter(&ssm.GetParameterInput{
+			Name:           &keyname,
+			WithDecryption: &withDecryption,
+		})
 		if err != nil {
-			fmt.Printf("GetInt parse error keyname[%s] param[%s] err[%s]\n", keyname, param, err)
+			fmt.Printf("GetInt cannot get parameter keyname[%s] err[%s]\n", keyname, err)
 			vp.cacheInt[key] = vp.Viper.GetInt(key)
 		} else {
-			vp.cacheInt[key] = v
+			v, err := strconv.Atoi(*param.Parameter.Value)
+			if err != nil {
+				fmt.Printf("GetInt parse error keyname[%s] param[%s] err[%s]\n", keyname, param, err)
+				vp.cacheInt[key] = vp.Viper.GetInt(key)
+			} else {
+				vp.cacheInt[key] = v
+			}
 		}
 	}
 	return vp.cacheInt[key]

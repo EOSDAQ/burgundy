@@ -52,6 +52,7 @@ func makeDatabase(burgundy *conf.ViperConfig) {
 	)
 	masterDB, err := sql.Open("mysql", dbURI)
 	if err != nil {
+		fmt.Printf("Make db open error[%s]\n", err)
 		panic(err)
 	}
 	defer masterDB.Close()
@@ -72,6 +73,7 @@ func makeDatabase(burgundy *conf.ViperConfig) {
 				panic(err)
 			}
 		} else {
+			fmt.Printf("Make db get schema error[%s]\n", err)
 			panic(err)
 		}
 	}

@@ -5,33 +5,6 @@ import (
 	"testing"
 )
 
-func TestEosdaqTx_GetArgs(t *testing.T) {
-	et := &EosdaqTx{
-		ID:         1,
-		Price:      100,
-		Maker:      "m",
-		MakerAsset: "abc",
-		Taker:      "t",
-		TakerAsset: "sys",
-		OrderTime:  "12345678",
-	}
-	tests := []struct {
-		name string
-		et   *EosdaqTx
-		want []interface{}
-	}{
-		// TODO: Add test cases.
-		{"normal", et, []interface{}{et.ID, et.Price, et.Maker, et.MakerAsset, et.Taker, et.TakerAsset, et.OrderTime}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.et.GetArgs(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EosdaqTx.GetArgs() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestEosdaqTx_GetVolume(t *testing.T) {
 	type args struct {
 		symbol string
@@ -40,19 +13,49 @@ func TestEosdaqTx_GetVolume(t *testing.T) {
 		name string
 		et   EosdaqTx
 		args args
-		want uint
+		want uint64
 	}{
-		{"same symbol", EosdaqTx{MakerAsset: "123.123 ABC"}, args{"ABC"}, 1231230},
-		{"same symbol", EosdaqTx{MakerAsset: "123.0000 SYS", TakerAsset: "123.123 ABC"}, args{"ABC"}, 1231230},
-		{"diff symbol", EosdaqTx{TakerAsset: "123.123 ABC"}, args{"DEF"}, 0},
-		{"similar symbol", EosdaqTx{MakerAsset: "123.123 SYS", TakerAsset: "123.123 ABC"}, args{"BCD"}, 0},
-		{"bigger symbol", EosdaqTx{MakerAsset: "123.123 SYSABC", TakerAsset: "123.123 ABC"}, args{"SAB"}, 0},
-		{"small symbol", EosdaqTx{MakerAsset: "123.123 IQ", TakerAsset: "123.123 ABC"}, args{"AIQ"}, 0},
+		{"same symbol", EosdaqTx{EOSData: EOSData{Volume: uint64(123123), Symbol: "ABC"}}, args{"ABC"}, uint64(123123)},
+		{"diff symbol", EosdaqTx{EOSData: EOSData{Volume: uint64(123123), Symbol: "ABC"}}, args{"DEF"}, uint64(0)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.et.GetVolume(tt.args.symbol); got != tt.want {
 				t.Errorf("EosdaqTx.GetVolume() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestContractData_Parse(t *testing.T) {
+	tests := []struct {
+		name string
+		cd   *ContractData
+		want *EOSData
+	}{
+		{"err", &ContractData{"newro", "eosdaq", "123123 SYS", "0.0030"}, nil},
+		{"bid", &ContractData{"newro", "eosdaq", "123.1230 SYS", "0.0030"}, &EOSData{"newro", 1231230, "SYS", BID, 30}},
+		{"ask", &ContractData{"newro", "eosdaq", "123.1230 IPOS", "0.0030"}, &EOSData{"newro", 1231230, "IPOS", ASK, 30}},
+		{"system", &ContractData{"eosio.ram", "eosdaq", "123.1230 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosdaq", "eosio.ramfee", "123.1023 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosdaq", "eosio.msig", "123.1230 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosio.stake", "eosdaq", "123.1203 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosdaq", "eosio.token", "123.1203 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosio.saving", "eosdaq", "123.1023 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosdaq", "eosio.names", "123.1203 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosio.bpay", "eosdaq", "123.1230 SYS", "buy ram"}, nil},
+		{"system", &ContractData{"eosio.vpay", "eosdaq", "123.1230 SYS", "buy ram"}, nil},
+		{"match1", &ContractData{"eosdaq", "newroask", "123.1230 SYS", "matched@0.0030"}, &EOSData{"newroask", 1231230, "SYS", MATCH, 30}},
+		{"match2", &ContractData{"eosdaq", "newrobid", "123.1230 IPOS", "matched@0.0030"}, &EOSData{"newrobid", 1231230, "IPOS", MATCH, 30}},
+		{"cancel1", &ContractData{"eosdaq", "newrobid", "123.1230 SYS", "cancel@0.0030"}, &EOSData{"newrobid", 1231230, "SYS", CANCEL, 30}},
+		{"cancel2", &ContractData{"eosdaq", "newroask", "123.1230 IPOS", "cancel@0.0030"}, &EOSData{"newroask", 1231230, "IPOS", CANCEL, 30}},
+		{"refund1", &ContractData{"eosdaq", "newrobid", "123.1230 SYS", "refund"}, &EOSData{"newrobid", 1231230, "SYS", REFUND, 0}},
+		{"refund2", &ContractData{"eosdaq", "newroask", "123.1230 IPOS", "refund"}, &EOSData{"newroask", 1231230, "IPOS", REFUND, 0}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cd.Parse("IPOS"); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ContractData.Parse() = %v, want %v", got, tt.want)
 			}
 		})
 	}

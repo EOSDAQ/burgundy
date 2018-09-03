@@ -94,17 +94,16 @@ func (eu eosdaqUsecase) UpdateTransaction(ctx context.Context, txs []*models.Eos
 		return err
 	}
 	//mlog.Debugw("UpdateTransaction db read", "cont", eu.token.ContractAccount, "data", dbtxs)
-	txMaps := make(map[uint]struct{})
+	txMaps := make(map[int64]struct{})
 	for _, t := range dbtxs {
 		txMaps[t.ID] = struct{}{}
 	}
 
 	// diff txs,db
 	addtxs := []*models.EosdaqTx{}
-	addvol := uint(0)
+	addvol := uint64(0)
 	for _, t := range txs {
 		if _, ok := txMaps[t.ID]; !ok {
-			t.UpdateDBField()
 			addtxs = append(addtxs, t)
 			addvol += t.GetVolume(eu.token.Symbol)
 		}

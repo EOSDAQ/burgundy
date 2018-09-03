@@ -52,7 +52,7 @@ func (g *gormEosdaqRepository) GetTransactions(ctx context.Context, txs []*model
 		return nil, nil
 	}
 
-	valueArgs := []uint{}
+	valueArgs := []int64{}
 	for _, t := range txs {
 		valueArgs = append(valueArgs, t.ID)
 	}
