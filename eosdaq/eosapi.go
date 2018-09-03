@@ -70,8 +70,8 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetActions(start uint) (result []*models.EosdaqTx) {
-	return nil
+func (e *EosdaqAPI) GetActions(start int64) (result []*models.EosdaqTx) {
+	return []*models.EosdaqTx{}
 }
 
 func (e *EosdaqAPI) GetTx(start int64) (result []*models.EosdaqTx) {

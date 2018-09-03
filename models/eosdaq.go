@@ -40,9 +40,9 @@ type Token struct {
 	BaseSymbol      string `json:"baseSymbol"`
 	Account         string `json:"account"`
 	ContractAccount string `json:"contractAccount"`
-	CurrentPrice    int    `json:"currentPrice"`
-	PrevPrice       int    `json:"prevPrice"`
-	Volume          uint   `json:"volume"`
+	CurrentPrice    uint64 `json:"currentPrice"`
+	PrevPrice       uint64 `json:"prevPrice"`
+	Volume          uint64 `json:"volume"`
 }
 
 func TokenInit(baseSymbol string) []*Token {

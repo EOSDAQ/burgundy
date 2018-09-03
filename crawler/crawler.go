@@ -23,8 +23,8 @@ type Crawler struct {
 }
 
 type crawlerDataHandler struct {
-	begin uint
-	end   uint
+	begin int64
+	end   int64
 }
 
 var mlog *zap.SugaredLogger
@@ -117,7 +117,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
-		cdh := &crawlerDataHandler{uint(1), uint(0)}
+		cdh := &crawlerDataHandler{int64(1), int64(0)}
 		for _ = range t.C {
 			ctx := context.Background()
 			ic.EosdaqService.UpdateTransaction(ctx, cdh.GetRangeData(ic.api))
@@ -127,17 +127,19 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 }
 
 func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI) (result []*models.EosdaqTx) {
-	result = api.GetTx(cdh.end)
+	result = api.GetActions(cdh.end)
 	if len(result) == 0 {
 		return nil
 	}
 
 	cdh.end = result[len(result)-1].ID
-	if cdh.end-cdh.begin+1 >= 100 {
-		mlog.Infow("delete tx", "from", cdh.begin, "to", cdh.end)
-		api.DelTx(cdh.begin, cdh.end-1)
-		cdh.begin = cdh.end
-	}
+	/*
+		if cdh.end-cdh.begin+1 >= 100 {
+			mlog.Infow("delete tx", "from", cdh.begin, "to", cdh.end)
+			api.DelTx(cdh.begin, cdh.end-1)
+			cdh.begin = cdh.end
+		}
+	*/
 
 	return result
 }

@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"burgundy/util"
 	"fmt"
 	"net/http"
 	"os"
@@ -93,14 +92,16 @@ func init() {
 	pflag.Parse()
 
 	defaultExclude := []string{}
-	for i := 0; i < 22; i++ {
-		base := util.ConvertBase(i, 6)
-		contract := strings.Replace(fmt.Sprintf("eosdaq%06s", base), "0", "o", -1)
-		if contract == "eosdaqoooo2o" {
-			continue
+	/*
+		for i := 0; i < 22; i++ {
+			base := util.ConvertBase(i, 6)
+			contract := strings.Replace(fmt.Sprintf("eosdaq%06s", base), "0", "o", -1)
+			if contract == "eosdaqoooo2o" {
+				continue
+			}
+			defaultExclude = append(defaultExclude, contract)
 		}
-		defaultExclude = append(defaultExclude, contract)
-	}
+	*/
 
 	var err error
 	Burgundy, err = readConfig(map[string]interface{}{
