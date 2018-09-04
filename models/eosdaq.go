@@ -155,6 +155,12 @@ func (cd *ContractData) MarshalData(token string, data interface{}) (r *EOSData)
 	if !ok {
 		return nil
 	}
+	keys := []string{"from", "to", "quantity", "memo"}
+	for _, k := range keys {
+		if _, ok := src[k]; !ok {
+			return nil
+		}
+	}
 	cd.From = src["from"].(string)
 	cd.To = src["to"].(string)
 	cd.Quantity = src["quantity"].(string)

@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/juju/errors"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +51,7 @@ func InitHandler(burgundy *conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err err
 	if err != nil {
 		return errors.Annotatef(err, "InitHandler")
 	}
-	newUserHTTPHandler(user, userSvc)
+	newUserHTTPHandler(user, userSvc, burgundy.GetString("jwt_access_key"))
 
 	return nil
 }
@@ -60,13 +61,21 @@ type HTTPUserHandler struct {
 	UserService service.UserService
 }
 
-func newUserHTTPHandler(eg *echo.Group, us service.UserService) {
+func newUserHTTPHandler(eg *echo.Group, us service.UserService, jwtkey string) {
 	handler := &HTTPUserHandler{
 		UserService: us,
 	}
 
+	if jwtkey != "" {
+		eg.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			SigningKey:  []byte(jwtkey),
+			TokenLookup: "header:Authorization",
+		}))
+	}
+
 	// /api/v1/acct/user
 	eg.POST("", handler.CreateUser)
+
 	eg.GET("/:accountName", handler.GetUser)
 	eg.DELETE("/:accountName", handler.DeleteUser)
 
