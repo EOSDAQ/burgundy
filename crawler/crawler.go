@@ -130,12 +130,11 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 }
 
 func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI, token string) (result []*models.EosdaqTx) {
-	result = api.GetActionTxs(cdh.end, token)
+	result, cdh.end = api.GetActionTxs(cdh.end, token)
 	if len(result) == 0 {
 		return nil
 	}
 
-	cdh.end = result[len(result)-1].ID
 	/*
 		if cdh.end-cdh.begin+1 >= 100 {
 			mlog.Infow("delete tx", "from", cdh.begin, "to", cdh.end)

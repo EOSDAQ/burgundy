@@ -70,10 +70,11 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.EosdaqTx) {
+func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.EosdaqTx, end int64) {
 	var err error
 	out := &eos.ActionsResp{}
-	end := start
+	end = start
+	mlog.Infow("GetActionTxs", "acc", e.contract, "start", start)
 	out, err = e.GetActions(eos.GetActionsRequest{
 		AccountName: AN(e.contract),
 		Pos:         start + 1,
@@ -81,11 +82,11 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 	})
 	if err != nil {
 		mlog.Errorw("GetActions error", "contract", e.contract, "err", err)
-		return nil
+		return nil, end
 	}
 	if out == nil {
 		mlog.Debugw("GetActions nil", "contract", e.contract)
-		return nil
+		return nil, end
 	}
 	for _, o := range out.Actions {
 		res := &models.EosdaqTx{
@@ -93,6 +94,10 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 			OrderTime:     o.BlockTime,
 			TransactionID: o.Trace.TransactionID,
 		}
+		if end < res.ID {
+			end = res.ID
+		}
+
 		if o.Trace.Action.ActionData.Data == nil {
 			mlog.Debugw("GetActions nil data", "action", res)
 			continue
@@ -103,12 +108,9 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 			mlog.Debugw("GetActions nil data", "action", o.Trace.Action.ActionData)
 			continue
 		}
-		if end < res.ID {
-			end = res.ID
-		}
 		result = append(result, res)
 	}
-	return result
+	return result, end
 }
 
 func (e *EosdaqAPI) GetTx(start int64) (result []*models.EosdaqTx) {
