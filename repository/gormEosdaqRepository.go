@@ -78,11 +78,11 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 	valueArgs := []interface{}{}
 
 	for _, t := range txs {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
 		valueArgs = append(valueArgs, t.GetArgs()...)
 	}
 
-	smt := `INSERT INTO %s_txs(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
+	smt := `INSERT INTO %s_txs(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
 	smt = fmt.Sprintf(smt, g.Contract, strings.Join(valueStrings, ","))
 
 	tx := g.Conn.Begin()

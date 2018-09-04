@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	eos "github.com/eoscanada/eos-go"
 )
 
 var eossysAccount map[string]struct{}
@@ -67,8 +65,8 @@ func TokenInit(baseSymbol string) []*Token {
 		&Token{Name: "EETH", Symbol: "EETH", Account: "ethsidechain"},
 		&Token{Name: "Poorman Token", Symbol: "POOR", Account: "poormantoken"},
 		&Token{Name: "RIDL", Symbol: "RIDL", Account: "ridlridlcoin"},
-		&Token{Name: "TRYBE", Symbol: "TRYBE", Account: "trybenetwork"},
-		&Token{Name: "WiZZ", Symbol: "WIZZ", Account: "wizznetwork1"},
+		//&Token{Name: "TRYBE", Symbol: "TRYBE", Account: "trybenetwork"},
+		//&Token{Name: "WiZZ", Symbol: "WIZZ", Account: "wizznetwork1"},
 	}
 	for i, t := range tokens {
 		base := util.ConvertBase(i, 6)
@@ -231,9 +229,9 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 
 // EosdaqTX ...
 type EosdaqTx struct {
-	ID            int64        `json:"account_action_seq" gorm:"primary_key"`
-	OrderTime     eos.JSONTime `json:"block_time"`
-	TransactionID []byte       `json:"trx_id"`
+	ID            int64     `json:"account_action_seq" gorm:"primary_key"`
+	OrderTime     time.Time `json:"orderTime"`
+	TransactionID []byte    `json:"trx_id"`
 
 	*EOSData
 }

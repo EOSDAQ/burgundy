@@ -91,7 +91,7 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 	for _, o := range out.Actions {
 		res := &models.EosdaqTx{
 			ID:            o.AccountSeq,
-			OrderTime:     o.BlockTime,
+			OrderTime:     o.BlockTime.Time,
 			TransactionID: o.Trace.TransactionID,
 		}
 		if end < res.ID {

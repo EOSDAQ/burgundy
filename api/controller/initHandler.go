@@ -66,27 +66,30 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService, jwtkey string) {
 		UserService: us,
 	}
 
+	// POST /api/v1/acct/user
+	eg.POST("", handler.CreateUser)
+	// POST /api/v1/acct/user/signin
+	eg.POST("/signin", handler.Login)
+
+	// METHOD /api/v1/acct/user/:accountName
+	r := eg.Group("/:accountName")
+
 	if jwtkey != "" {
-		eg.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 			SigningKey:  []byte(jwtkey),
 			TokenLookup: "header:Authorization",
 		}))
 	}
 
-	// /api/v1/acct/user
-	eg.POST("", handler.CreateUser)
+	r.GET("", handler.GetUser)
+	r.DELETE("", handler.DeleteUser)
 
-	eg.GET("/:accountName", handler.GetUser)
-	eg.DELETE("/:accountName", handler.DeleteUser)
+	r.POST("/confirmEmail", handler.ConfirmEmail)
+	r.DELETE("/revokeEmail", handler.RevokeEmail)
 
-	eg.POST("/:accountName/signin", handler.Login)
-
-	eg.POST("/:accountName/confirmEmail", handler.ConfirmEmail)
-	eg.DELETE("/:accountName/revokeEmail", handler.RevokeEmail)
-
-	eg.POST("/:accountName/newOTP", handler.NewOTP)
-	eg.DELETE("/:accountName/revokeOTP", handler.RevokeOTP)
-	eg.POST("/:accountName/validateOTP", handler.ValidateOTP)
+	r.POST("/newOTP", handler.NewOTP)
+	r.DELETE("/revokeOTP", handler.RevokeOTP)
+	r.POST("/validateOTP", handler.ValidateOTP)
 }
 
 func response(c echo.Context, code int, trID, errCode, errMsg string, result ...interface{}) error {

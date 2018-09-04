@@ -117,12 +117,12 @@ func (h *HTTPUserHandler) DeleteUser(c echo.Context) (err error) {
 // Login ...
 func (h *HTTPUserHandler) Login(c echo.Context) (err error) {
 	type LoginRequest struct {
+		AccountName string `json:"accountName"`
 		AccountHash string `json:"accountHash"`
 	}
 
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 
-	accName := c.Param("accountName")
 	req := &LoginRequest{}
 
 	if err = c.Bind(req); err != nil {
@@ -134,8 +134,8 @@ func (h *HTTPUserHandler) Login(c echo.Context) (err error) {
 		})
 	}
 
-	if accName == "" || req.AccountHash == "" {
-		mlog.Errorw("Login error ", "trID", trID, "accName", accName, "hash", req.AccountHash)
+	if req.AccountName == "" || req.AccountHash == "" {
+		mlog.Errorw("Login error ", "trID", trID, "accName", req.AccountName, "hash", req.AccountHash)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
@@ -143,16 +143,16 @@ func (h *HTTPUserHandler) Login(c echo.Context) (err error) {
 		})
 	}
 
-	mlog.Debugw("Login ", "trID", trID, "accName", accName, "accHash", req.AccountHash)
+	mlog.Debugw("Login ", "trID", trID, "accName", req.AccountName, "accHash", req.AccountHash)
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	user, err := h.UserService.Login(ctx, accName, req.AccountHash)
+	user, err := h.UserService.Login(ctx, req.AccountName, req.AccountHash)
 	if err != nil {
-		mlog.Errorw("Login error ", "trID", trID, "accName", accName, "err", err)
+		mlog.Errorw("Login error ", "trID", trID, "accName", req.AccountName, "err", err)
 		return c.JSON(http.StatusBadRequest, BurgundyStatus{
 			TRID:       trID,
 			ResultCode: "1101",
