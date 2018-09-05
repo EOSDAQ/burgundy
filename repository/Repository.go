@@ -115,6 +115,7 @@ type UserRepository interface {
 
 // EosdaqRepository ...
 type EosdaqRepository interface {
+	GetLastTransactionID(ctx context.Context) int64
 	GetTransactionByID(ctx context.Context, id uint) (*models.EosdaqTx, error)
 	GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error)
 	SaveTransaction(ctx context.Context, txs []*models.EosdaqTx) error

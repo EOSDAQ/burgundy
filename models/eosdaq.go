@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/juju/errors"
 )
 
 var eossysAccount map[string]struct{}
@@ -112,33 +114,90 @@ func (o OrderType) String() string {
 
 // OrderBook ...
 type OrderBook struct {
-	OBID          uint   `json:"obid" gorm:"primary_key"`
-	ID            uint   `json:"id"`
-	Name          string `json:"name"`
-	Price         int    `json:"price"`
-	Quantity      string `json:"quantity"`
-	Volume        int
-	OrderTimeJSON string    `json:"ordertime" gorm:"-"`
-	OrderTime     time.Time `json:"orderTime"`
-	Type          OrderType `json:"ordertype"`
+	OBID        uint      `json:"obid" gorm:"primary_key"`
+	ID          uint      `json:"id"`
+	OrderSymbol string    `json:"orderSymbol"`
+	OrderTime   time.Time `json:"orderTime"`
+
+	*EOSData
 }
 
 func (ob *OrderBook) GetArgs() []interface{} {
-	return []interface{}{ob.ID, ob.Name, ob.Price, ob.Quantity, ob.Volume, ob.OrderTime, ob.Type}
+	return []interface{}{
+		ob.ID,
+		ob.OrderSymbol,
+		ob.OrderTime,
+		ob.AccountName,
+		ob.Price,
+		ob.Volume,
+		ob.Symbol,
+		ob.Type,
+	}
 }
 
-func (ob *OrderBook) UpdateDBField() {
-	symbol := ""
-	floatValue := 0.0
-	_, err := fmt.Sscanf(ob.Quantity, "%f %s", &floatValue, &symbol)
-	ob.Volume = int(floatValue * 10000)
+type UnixTime struct {
+	time.Time
+}
 
-	i, err := strconv.ParseInt(fmt.Sprintf("%s000", ob.OrderTimeJSON), 10, 64)
-	if err != nil {
-		mlog.Errorw("UpdateDBField", "order", ob, "err", err)
-		return
+func (ut *UnixTime) UnmarshalJSON(data []byte) (err error) {
+	strData := strings.Trim(string(data), "\"")
+	if strData == "" {
+		return nil
 	}
-	ob.OrderTime = time.Unix(0, i)
+
+	i, err := strconv.ParseInt(fmt.Sprintf("%s000", strData), 10, 64)
+	if err != nil {
+		mlog.Errorw("UnmarshalJSON", "data", strData, "err", err)
+		return err
+	}
+	ut.Time = time.Unix(0, i)
+	return nil
+}
+
+type OrderData struct {
+	ID        uint     `json:"id"`
+	Name      string   `json:"name"`
+	Price     uint64   `json:"price"`
+	Quantity  string   `json:"quantity"`
+	OrderTime UnixTime `json:"ordertime"`
+}
+
+func parseQuantity(quantity string) (vol uint64, sym string, err error) {
+	matched := quantPattern.FindAllStringSubmatch(quantity, -1)
+	if len(matched) != 1 {
+		mlog.Errorw("parseQuantity", "quantity", quantity, "err", "Invalid Quantity Format")
+		return 0, "", errors.NotValidf("Invalid Quantity Format")
+	}
+	vol, err = util.ParseEosFloat(matched[0][1])
+	if err != nil {
+		mlog.Errorw("parseQuantity", "quantity", quantity, "err", "Invalid Float Format")
+		return 0, "", errors.NotValidf("Invalid Float Format")
+	}
+	sym = matched[0][2]
+
+	return vol, sym, nil
+}
+
+func (od *OrderData) Parse(symbol string, orderType OrderType) (r *OrderBook) {
+
+	r = &OrderBook{
+		ID:          od.ID,
+		OrderSymbol: symbol,
+		OrderTime:   od.OrderTime.Time,
+		EOSData: &EOSData{
+			AccountName: od.Name,
+			Price:       od.Price,
+			Type:        orderType,
+		},
+	}
+
+	var err error
+	r.Volume, r.Symbol, err = parseQuantity(od.Quantity)
+	if err != nil {
+		return nil
+	}
+
+	return r
 }
 
 type ContractData struct {
@@ -168,20 +227,6 @@ func (cd *ContractData) MarshalData(token string, data interface{}) (r *EOSData)
 
 func (cd *ContractData) Parse(token string) (r *EOSData) {
 
-	r = &EOSData{}
-	var err error
-	matched := quantPattern.FindAllStringSubmatch(cd.Quantity, -1)
-	if len(matched) != 1 {
-		mlog.Infow("ContractData Parse", "data", cd, "err", "Invalid Quantity Format")
-		return nil
-	}
-	r.Volume, err = util.ParseEosFloat(matched[0][1])
-	if err != nil {
-		mlog.Infow("ContractData Parse", "data", cd, "err", err)
-		return nil
-	}
-	r.Symbol = matched[0][2]
-
 	var ok bool
 	if _, ok = eossysAccount[cd.From]; ok {
 		return nil
@@ -191,37 +236,21 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 	}
 
 	memos := strings.Split(cd.Memo, "@")
-	strPrice := ""
-	switch memos[0] {
-	case "match":
-		r.Type = MATCH
-		strPrice = memos[1]
-	case "cancel":
-		r.Type = CANCEL
-		strPrice = memos[1]
-	case "refund":
-		r.Type = REFUND
-		strPrice = "0.0"
-	default:
-		if r.Symbol == token {
-			r.Type = ASK
-		} else {
-			r.Type = BID
-		}
-		strPrice = memos[0]
+	if memos[0] != "match" {
+		return nil
 	}
 
-	r.Price, err = util.ParseEosFloat(strPrice)
+	var err error
+	r = &EOSData{AccountName: cd.To, Type: MATCH}
+	r.Price, err = util.ParseEosFloat(memos[1])
 	if err != nil {
 		mlog.Infow("ContractData Parse", "data", cd, "err", err)
 		return nil
 	}
 
-	switch r.Type {
-	case BID, ASK:
-		r.AccountName = cd.From
-	default:
-		r.AccountName = cd.To
+	r.Volume, r.Symbol, err = parseQuantity(cd.Quantity)
+	if err != nil {
+		return nil
 	}
 
 	return r
@@ -229,7 +258,8 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 
 // EosdaqTX ...
 type EosdaqTx struct {
-	ID            int64     `json:"account_action_seq" gorm:"primary_key"`
+	TXID          uint      `gorm:"primary_key"`
+	ID            int64     `json:"account_action_seq"`
 	OrderTime     time.Time `json:"orderTime"`
 	TransactionID []byte    `json:"trx_id"`
 
@@ -239,10 +269,10 @@ type EosdaqTx struct {
 type EOSData struct {
 	// for Backend DB
 	AccountName string
+	Price       uint64
 	Volume      uint64
 	Symbol      string
 	Type        OrderType
-	Price       uint64
 }
 
 func (et *EosdaqTx) GetArgs() []interface{} {
@@ -263,16 +293,4 @@ func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint64) {
 		return et.Volume
 	}
 	return uint64(0)
-}
-
-type TxResponse []*EosdaqTx
-
-func (tr TxResponse) GetRange(begin, end int64) (rb, re int64) {
-	if begin == 0 {
-		rb = tr[0].ID
-	} else {
-		rb = begin
-	}
-	re = tr[len(tr)-1].ID
-	return
 }

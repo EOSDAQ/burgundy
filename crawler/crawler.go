@@ -23,11 +23,6 @@ type Crawler struct {
 	token         string
 }
 
-type crawlerDataHandler struct {
-	begin int64
-	end   int64
-}
-
 var mlog *zap.SugaredLogger
 
 func init() {
@@ -76,7 +71,7 @@ func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB
 			//return errors.Annotatef(err, "InitModule NewAPI failed token[%+v]", t)
 		}
 
-		eosRepo := _Repo.NewGormEosdaqRepository(burgundy, db, t.ContractAccount)
+		eosRepo := _Repo.NewGormEosdaqRepository(db, t.Symbol)
 		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, tokenRepo, timeout)
 		if err != nil {
 			return errors.Annotatef(err, "InitModule NewSvc failed token[%s]", t)
@@ -107,7 +102,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Ask")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(), models.ASK)
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.token))
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
@@ -115,33 +110,18 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Bid")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(), models.BID)
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.token))
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
-		cdh := &crawlerDataHandler{int64(1), int64(0)}
+		lastIdx := ic.EosdaqService.GetLastTransactionID(context.Background())
+		var result []*models.EosdaqTx
 		for _ = range t.C {
 			ctx := context.Background()
-			ic.EosdaqService.UpdateTransaction(ctx, cdh.GetRangeData(ic.api, ic.token))
+			result, lastIdx = ic.api.GetActionTxs(lastIdx, ic.token)
+			ic.EosdaqService.UpdateTransaction(ctx, result)
 		}
 	}(c, d)
 	return nil
-}
-
-func (cdh *crawlerDataHandler) GetRangeData(api *eosdaq.EosdaqAPI, token string) (result []*models.EosdaqTx) {
-	result, cdh.end = api.GetActionTxs(cdh.end, token)
-	if len(result) == 0 {
-		return nil
-	}
-
-	/*
-		if cdh.end-cdh.begin+1 >= 100 {
-			mlog.Infow("delete tx", "from", cdh.begin, "to", cdh.end)
-			api.DelTx(cdh.begin, cdh.end-1)
-			cdh.begin = cdh.end
-		}
-	*/
-
-	return result
 }

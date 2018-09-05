@@ -11,7 +11,7 @@ import (
 func TestEOSAPI(t *testing.T) {
 
 	Burgundy := conf.Burgundy
-	Burgundy.Set("eosdaqmanage", "5KX4aFJCuqyndWJnBLNanBxLffrT3ACeufxJL1N931V9uAU1Nnm")
+	Burgundy.Set("eosdaqmanage", "5K8q9AzWV6ztfu16LHrngHG2Ts4SdzDPQhYCpTUC4Fx9jsnmBbo")
 
 	eosapi, err := NewAPI(Burgundy, &EosNet{
 		host:     "http://10.100.100.2",
@@ -29,8 +29,15 @@ func TestEOSAPI(t *testing.T) {
 
 	eosapi.contract = "eosdaqoooo2o"
 
-	assert.Nil(t, eosapi.GetTx(0))
-	assert.NotNil(t, eosapi.GetAsk())
-	assert.NotNil(t, eosapi.GetBid())
-	assert.NotNil(t, eosapi.GetActions(0))
+	t.Run("GetAsk", func(t *testing.T) {
+		assert.NotNil(t, eosapi.GetAsk())
+	})
+	t.Run("GetBid", func(t *testing.T) {
+		assert.NotNil(t, eosapi.GetBid())
+	})
+	t.Run("GetActionTxs", func(t *testing.T) {
+		r, end := eosapi.GetActionTxs(int64(0), "IPOS")
+		assert.NotNil(t, r)
+		assert.EqualValues(t, r[len(r)-1].ID, end)
+	})
 }
