@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"burgundy/conf"
 	models "burgundy/models"
 	"burgundy/util"
 	"context"
@@ -12,29 +11,36 @@ import (
 )
 
 type gormEosdaqRepository struct {
-	Conn     *gorm.DB
-	Contract string
+	conn   *gorm.DB
+	symbol string
 }
 
 // NewGormEosdaqRepository ...
-func NewGormEosdaqRepository(burgundy *conf.ViperConfig, Conn *gorm.DB, contract string) EosdaqRepository {
-	Conn = Conn.Table(fmt.Sprintf("%s_txs", contract)).AutoMigrate(&models.EosdaqTx{})
-	Conn = Conn.Table(fmt.Sprintf("%s_order_books", contract)).AutoMigrate(&models.OrderBook{})
-	/*
-		gorm.DefaultTableNameHandler = func(db *gorm.DB, defaultTableName string) string {
-			return fmt.Sprintf("%s_%s", contract, defaultTableName)
-		}
-	*/
-	return &gormEosdaqRepository{Conn, contract}
+func NewGormEosdaqRepository(Conn *gorm.DB, symbol string) EosdaqRepository {
+	Conn.AutoMigrate(&models.EosdaqTx{})
+	Conn.AutoMigrate(&models.OrderBook{})
+	return &gormEosdaqRepository{Conn, symbol}
 }
 
-func (g *gormEosdaqRepository) Table(table string) *gorm.DB {
-	return g.Conn.Table(fmt.Sprintf("%s_%s", g.Contract, table))
+func (g *gormEosdaqRepository) GetLastTransactionID(ctx context.Context) int64 {
+	t := &models.EosdaqTx{}
+	scope := g.conn.Select([]string{"id"}).
+		Where("symbol = ?", g.symbol).
+		Order("id desc").
+		First(&t)
+	if scope.Error != nil {
+		mlog.Errorw("GetLastTransactionID", "symbol", g.symbol, "err", scope.Error)
+		return 0
+	}
+	if scope.RowsAffected == 0 {
+		return 0
+	}
+	return t.ID
 }
 
 func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) (t *models.EosdaqTx, err error) {
 	t = &models.EosdaqTx{}
-	scope := g.Table("txs").Where("id = ?", id).First(&t)
+	scope := g.conn.Where("id = ? and symbol = ?", id, g.symbol).First(&t)
 	if scope.Error != nil {
 		return nil, scope.Error
 	}
@@ -43,7 +49,6 @@ func (g *gormEosdaqRepository) GetTransactionByID(ctx context.Context, id uint) 
 		return nil, fmt.Errorf("record not found")
 	}
 	return t, nil
-
 }
 
 func (g *gormEosdaqRepository) GetTransactions(ctx context.Context, txs []*models.EosdaqTx) (dbtxs []*models.EosdaqTx, err error) {
@@ -56,7 +61,7 @@ func (g *gormEosdaqRepository) GetTransactions(ctx context.Context, txs []*model
 	for _, t := range txs {
 		valueArgs = append(valueArgs, t.ID)
 	}
-	scope := g.Table("txs").Where("id in (?)", valueArgs).Find(&dbtxs)
+	scope := g.conn.Where("id in (?) and symbol = ?", valueArgs, g.symbol).Find(&dbtxs)
 	if scope.Error != nil {
 		return nil, scope.Error
 	}
@@ -82,20 +87,20 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 		valueArgs = append(valueArgs, t.GetArgs()...)
 	}
 
-	smt := `INSERT INTO %s_txs(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
-	smt = fmt.Sprintf(smt, g.Contract, strings.Join(valueStrings, ","))
+	smt := `INSERT INTO eosdaq_txes(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 
-	tx := g.Conn.Begin()
-	if err := tx.Exec(smt, valueArgs...).Error; err != nil {
-		tx.Rollback()
+	scope := g.conn.Begin()
+	if err := scope.Exec(smt, valueArgs...).Error; err != nil {
+		scope.Rollback()
 		return err
 	}
-	tx.Commit()
+	scope.Commit()
 	return nil
 }
 
 func (g *gormEosdaqRepository) GetOrderBook(ctx context.Context, orderType models.OrderType) (obs []*models.OrderBook, err error) {
-	scope := g.Table("order_books").Where("type = ?", orderType).Find(&obs)
+	scope := g.conn.Where("type = ? and order_symbol = ?", orderType, g.symbol).Find(&obs)
 	if scope.RowsAffected == 0 {
 		//fmt.Printf("record not found")
 		return nil, nil
@@ -113,19 +118,19 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
 	for _, o := range obs {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
 		valueArgs = append(valueArgs, o.GetArgs()...)
 	}
 
-	smt := `INSERT INTO %s_order_books(id, name, price, quantity, volume, order_time, type) VALUES %s`
-	smt = fmt.Sprintf(smt, g.Contract, strings.Join(valueStrings, ","))
+	smt := `INSERT INTO order_books(id, order_symbol, order_time, account_name, price, volume, symbol, type) VALUES %s`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 
-	tx := g.Conn.Begin()
-	if err := tx.Exec(smt, valueArgs...).Error; err != nil {
-		tx.Rollback()
+	scope := g.conn.Begin()
+	if err := scope.Exec(smt, valueArgs...).Error; err != nil {
+		scope.Rollback()
 		return err
 	}
-	tx.Commit()
+	scope.Commit()
 	return nil
 }
 
@@ -140,14 +145,14 @@ func (g *gormEosdaqRepository) DeleteOrderBook(ctx context.Context, obs []*model
 		valueArgs = append(valueArgs, o.OBID)
 	}
 
-	smt := `DELETE FROM %s_order_books WHERE ob_id IN (%s)`
-	smt = fmt.Sprintf(smt, g.Contract, util.ArrayToString(valueArgs, ","))
+	smt := `DELETE FROM order_books WHERE ob_id IN (%s)`
+	smt = fmt.Sprintf(smt, util.ArrayToString(valueArgs, ","))
 
-	tx := g.Conn.Begin()
-	if err := tx.Exec(smt).Error; err != nil {
-		tx.Rollback()
+	scope := g.conn.Begin()
+	if err := scope.Exec(smt).Error; err != nil {
+		scope.Rollback()
 		return err
 	}
-	tx.Commit()
+	scope.Commit()
 	return nil
 }

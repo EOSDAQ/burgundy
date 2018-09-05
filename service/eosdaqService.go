@@ -5,6 +5,7 @@ import (
 	"burgundy/models"
 	"burgundy/repository"
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -30,29 +31,34 @@ func NewEosdaqService(burgundy *conf.ViperConfig,
 }
 
 // UpdateOrderbook ...
-func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook, orderType models.OrderType) (err error) {
+func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook) (err error) {
+
+	if len(obs) == 0 {
+		return nil
+	}
+
 	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
 	defer cancel()
 
 	// get db old
-	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, orderType)
+	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, obs[0].Type)
 	if err != nil {
 		mlog.Errorw("UpdateOrderbook get", "contract", eu.token.ContractAccount, "err", err)
 		return err
 	}
 	//mlog.Debugw("UpdateOrderbook db read", "cont", eu.token.ContractAccount, "data", orderBooks)
-	orderMaps := make(map[uint]*models.OrderBook)
+	orderMaps := make(map[string]*models.OrderBook)
 	for _, o := range orderBooks {
-		orderMaps[o.ID] = o
+		orderMaps[fmt.Sprintf("%d.%s", o.ID, o.OrderSymbol)] = o
 	}
 	// diff obs,db
 	addBooks := []*models.OrderBook{}
 	for _, n := range obs {
-		if _, ok := orderMaps[n.ID]; !ok {
-			n.UpdateDBField()
+		key := fmt.Sprintf("%d.%s", n.ID, n.OrderSymbol)
+		if _, ok := orderMaps[key]; ok {
+			delete(orderMaps, key)
+		} else {
 			addBooks = append(addBooks, n)
-		} else if ok {
-			delete(orderMaps, n.ID)
 		}
 	}
 	//mlog.Debugw("UpdateOrderbook db add", "cont", eu.token.ContractAccount, "data", addBooks)
@@ -76,6 +82,14 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	// websocket broadcast
 
 	return
+}
+
+// GetLastTransaction ...
+func (eu eosdaqUsecase) GetLastTransactionID(ctx context.Context) (lastIdx int64) {
+	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
+	defer cancel()
+
+	return eu.eosdaqRepo.GetLastTransactionID(innerCtx)
 }
 
 // UpdateTransaction ...

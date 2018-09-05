@@ -17,7 +17,6 @@ var ActN = eos.ActN
 func init() {
 	eos.RegisterAction(AN("eosio"), ActN("enroll"), EosdaqAction{})
 	eos.RegisterAction(AN("eosio"), ActN("drop"), EosdaqAction{})
-	eos.RegisterAction(AN("eosio"), ActN("deletetransx"), Transx{})
 	//eos.Debug = true
 }
 
@@ -102,6 +101,7 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 			mlog.Debugw("GetActions nil data", "action", res)
 			continue
 		}
+
 		cd := &models.ContractData{}
 		res.EOSData = cd.MarshalData(token, o.Trace.Action.ActionData.Data)
 		if res.EOSData == nil {
@@ -113,55 +113,17 @@ func (e *EosdaqAPI) GetActionTxs(start int64, token string) (result []*models.Eo
 	return result, end
 }
 
-func (e *EosdaqAPI) GetTx(start int64) (result []*models.EosdaqTx) {
+func (e *EosdaqAPI) GetAsk(symbol string) (result []*models.OrderBook) {
+	return e.getOrderBook(symbol, models.ASK)
+}
+func (e *EosdaqAPI) GetBid(symbol string) (result []*models.OrderBook) {
+	return e.getOrderBook(symbol, models.BID)
+}
+
+func (e *EosdaqAPI) getOrderBook(symbol string, orderType models.OrderType) (result []*models.OrderBook) {
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
-	end := start
-	for out.More {
-		out, err = e.GetTableRows(eos.GetTableRowsRequest{
-			Scope:      e.contract,
-			Code:       e.contract,
-			LowerBound: fmt.Sprintf("%d", end+1),
-			Table:      "tx",
-			JSON:       true,
-		})
-		if err != nil {
-			mlog.Errorw("GetTx error", "contract", e.contract, "err", err)
-			break
-		}
-		if out == nil {
-			mlog.Infow("GetTx nil", "contract", e.contract)
-			break
-		}
-		res := models.TxResponse{}
-		out.JSONToStructs(&res)
-		if len(res) == 0 {
-			//mlog.Infow("GetTx nil", "contract", e.contract)
-			break
-		}
-		end = res[len(res)-1].ID
-		result = append(result, res...)
-	}
-	return result
-}
-
-func (e *EosdaqAPI) DelTx(from, to uint) {
-	e.DoAction(
-		DeleteTransaction(eos.AccountName(e.contract), eos.AccountName(e.manage), from, to),
-	)
-}
-
-func (e *EosdaqAPI) GetAsk() (result []*models.OrderBook) {
-	return e.getOrderBook(models.ASK)
-}
-func (e *EosdaqAPI) GetBid() (result []*models.OrderBook) {
-	return e.getOrderBook(models.BID)
-}
-
-func (e *EosdaqAPI) getOrderBook(orderType models.OrderType) (result []*models.OrderBook) {
-	var err error
-	out := &eos.GetTableRowsResp{More: true}
-	begin, end := uint(0), uint(0)
+	end := uint(0)
 	for out.More {
 		out, err = e.GetTableRows(eos.GetTableRowsRequest{
 			Scope:      e.contract,
@@ -178,20 +140,19 @@ func (e *EosdaqAPI) getOrderBook(orderType models.OrderType) (result []*models.O
 			//mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
 			break
 		}
-		res := []*models.OrderBook{}
+		res := []*models.OrderData{}
 		out.JSONToStructs(&res)
 		if len(res) == 0 {
 			//mlog.Infow("getOrderBook nil", "contract", e.contract, "type", orderType)
 			break
 		}
-		if begin == 0 {
-			begin = res[0].ID
-		}
 		end = res[len(res)-1].ID
 		for _, r := range res {
-			r.Type = orderType
+			ob := r.Parse(symbol, orderType)
+			if ob != nil {
+				result = append(result, ob)
+			}
 		}
-		result = append(result, res...)
 	}
 	return result
 }

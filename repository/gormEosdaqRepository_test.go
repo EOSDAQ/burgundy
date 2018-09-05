@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"burgundy/conf"
 	models "burgundy/models"
 	"burgundy/util"
 	"context"
@@ -22,10 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testQueryFunc func(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string)
+type testQueryFunc func(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository)
 
-func newRepo(contract string) (sqlmock.Sqlmock, EosdaqRepository) {
-	contDB := fmt.Sprintf("sqlmock_db_%s", contract)
+func newRepo() (sqlmock.Sqlmock, EosdaqRepository) {
+	contDB := fmt.Sprintf("sqlmock_db_%s", util.RandString(4))
 	_, mock, err := sqlmock.NewWithDSN(contDB)
 	if err != nil {
 		log.Fatalf("can't create sqlmock: %s", err)
@@ -40,8 +39,7 @@ func newRepo(contract string) (sqlmock.Sqlmock, EosdaqRepository) {
 
 	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("^CREATE TABLE ").WillReturnResult(sqlmock.NewResult(1, 1))
-	repo := NewGormEosdaqRepository(conf.Burgundy, gormDB, contract)
+	repo := NewGormEosdaqRepository(gormDB, "ICO")
 
 	return mock, repo
 }
@@ -56,19 +54,23 @@ func fixedFullRe(s string) string {
 	return fmt.Sprintf("^%s$", regexp.QuoteMeta(s))
 }
 
-func getTestTxs(n int) []*models.EosdaqTx {
+func getTestTxs(n uint) []*models.EosdaqTx {
 	ret := []*models.EosdaqTx{}
-	for i := 1; i <= n; i++ {
+	for i := uint(1); i <= n; i++ {
 		o := &models.EosdaqTx{
-			ID:            uint(i),
-			Price:         util.RandNum(10000),
-			Maker:         util.RandString(12),
-			MakerAsset:    fmt.Sprintf("%d.%d ICO", util.RandNum(1000), util.RandNum(10000)),
-			Taker:         util.RandString(12),
-			TakerAsset:    fmt.Sprintf("%d.%d EOS", util.RandNum(1000), util.RandNum(10000)),
-			OrderTimeJSON: fmt.Sprintf("%d", time.Now().UnixNano()),
+			TXID:          i,
+			ID:            int64(i * uint(util.RandNum(100))),
+			OrderTime:     time.Now(),
+			TransactionID: []byte(util.RandString(32)),
+			EOSData: &models.EOSData{
+				AccountName: util.RandString(12),
+				Price:       uint64(util.RandNum(1000000)),
+				Volume:      uint64(util.RandNum(1000000)),
+				Symbol:      "ICO",
+				Type:        models.OrderType(util.RandNum(4) + 1),
+			},
 		}
-		fmt.Printf("getTestTxs [%v]\n", o)
+		//fmt.Printf("getTestTxs [%v]\n", o)
 		ret = append(ret, o)
 	}
 
@@ -76,12 +78,10 @@ func getTestTxs(n int) []*models.EosdaqTx {
 }
 
 func getRowsForTxs(txs []*models.EosdaqTx) *sqlmock.Rows {
-	var txFieldNames = []string{"id", "price", "maker", "maker_asset", "taker", "taker_asset", "order_time"}
+	var txFieldNames = []string{"tx_id", "id", "order_time", "transaction_id", "account_name", "price", "volume", "symbol", "type"}
 	rows := sqlmock.NewRows(txFieldNames)
 	for _, t := range txs {
-		t.UpdateDBField()
-		t.OrderTimeJSON = "" // for assert
-		rows = rows.AddRow(t.ID, t.Price, t.Maker, t.MakerAsset, t.Taker, t.TakerAsset, t.OrderTime)
+		rows = rows.AddRow(t.TXID, t.ID, t.OrderTime, t.TransactionID, t.AccountName, t.Price, t.Volume, t.Symbol, t.Type)
 		//fmt.Printf("rows : [%v]\n", rows)
 	}
 	return rows
@@ -99,19 +99,23 @@ func getArgsForTxs(txs []*models.EosdaqTx) (ret []driver.Value) {
 	return ret
 }
 
-func getTestOrderBooks(n int, orderType models.OrderType) []*models.OrderBook {
+func getTestOrderBooks(n uint, orderType models.OrderType) []*models.OrderBook {
 	ret := []*models.OrderBook{}
-	for i := 1; i <= n; i++ {
+	for i := uint(1); i <= n; i++ {
 		o := &models.OrderBook{
-			OBID:          uint(i),
-			ID:            uint(i * util.RandNum(100)),
-			Name:          fmt.Sprintf("name_%d", i),
-			Price:         util.RandNum(10000),
-			Quantity:      fmt.Sprintf("%d.%d ICO", util.RandNum(1000), util.RandNum(10000)),
-			OrderTimeJSON: fmt.Sprintf("%d", time.Now().UnixNano()),
-			Type:          orderType,
+			OBID:        i,
+			ID:          i * uint(util.RandNum(100)),
+			OrderSymbol: "ICO",
+			OrderTime:   time.Now(),
+			EOSData: &models.EOSData{
+				AccountName: util.RandString(12),
+				Price:       uint64(util.RandNum(1000000)),
+				Volume:      uint64(util.RandNum(1000000)),
+				Symbol:      "SYS",
+				Type:        orderType,
+			},
 		}
-		fmt.Printf("getTestOrderBooks [%v]\n", o)
+		//fmt.Printf("getTestOrderBooks [%v]\n", o)
 		ret = append(ret, o)
 	}
 
@@ -119,12 +123,10 @@ func getTestOrderBooks(n int, orderType models.OrderType) []*models.OrderBook {
 }
 
 func getRowsForOrderBooks(orderbooks []*models.OrderBook) *sqlmock.Rows {
-	var orderbookFieldNames = []string{"ob_id", "id", "name", "price", "quantity", "volume", "order_time", "type"}
+	var orderbookFieldNames = []string{"ob_id", "id", "order_symbol", "order_time", "account_name", "price", "volume", "symbol", "type"}
 	rows := sqlmock.NewRows(orderbookFieldNames)
 	for _, o := range orderbooks {
-		o.UpdateDBField()
-		o.OrderTimeJSON = "" // for assert
-		rows = rows.AddRow(o.OBID, o.ID, o.Name, o.Price, o.Quantity, o.Volume, o.OrderTime, o.Type)
+		rows = rows.AddRow(o.OBID, o.ID, o.OrderSymbol, o.OrderTime, o.AccountName, o.Price, o.Volume, o.Symbol, o.Type)
 		//fmt.Printf("rows : [%v]\n", rows)
 	}
 	return rows
@@ -157,18 +159,17 @@ func TestQueries(t *testing.T) {
 		funcName = strings.TrimPrefix(funcName, ".")
 		t.Run(funcName, func(t *testing.T) {
 			t.Parallel()
-			coinContract := util.RandString(12)
-			m, repo := newRepo(coinContract)
+			m, repo := newRepo()
 			defer checkMock(t, m)
-			f(t, m, repo, coinContract)
+			f(t, m, repo)
 		})
 	}
 }
 
-func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
+func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
-	expTx := getTestTxs(1)
-	req := fmt.Sprintf(`SELECT * FROM "%s_txs" WHERE (id = ?) ORDER BY "%s_txs"."id" ASC LIMIT 1`, contract, contract)
+	expTx := getTestTxs(uint(1))
+	req := fmt.Sprintf(`SELECT * FROM "eosdaq_txes" WHERE (id = ? and symbol = ?) ORDER BY "eosdaq_txes"."tx_id" ASC LIMIT 1`)
 	m.ExpectQuery(fixedFullRe(req)).
 		WillReturnRows(getRowsForTxs(expTx))
 
@@ -177,15 +178,15 @@ func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqReposito
 	assert.Equal(t, expTx[0], tx)
 }
 
-func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
+func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
-	expTx := getTestTxs(2)
-	smt := `INSERT INTO %s_txs(id, price, maker, maker_asset, taker, taker_asset, order_time) VALUES %s`
+	expTx := getTestTxs(uint(2))
+	smt := `INSERT INTO eosdaq_txes(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
 	valueStrings := []string{}
 	for range expTx {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
 	}
-	smt = fmt.Sprintf(smt, contract, strings.Join(valueStrings, ","))
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 	args := getArgsForTxs(expTx)
 
 	m.ExpectBegin()
@@ -198,12 +199,12 @@ func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository,
 	assert.Nil(t, err)
 }
 
-func testGetOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
+func testGetOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
 	for _, orderType := range []models.OrderType{models.ASK, models.BID} {
-		expOrderBooks := getTestOrderBooks(2, orderType)
-		m.ExpectQuery(fixedFullRe(fmt.Sprintf("SELECT * FROM \"%s_order_books\" WHERE (type = ?)", contract))).
-			WithArgs([]driver.Value{orderType}...).
+		expOrderBooks := getTestOrderBooks(uint(2), orderType)
+		m.ExpectQuery(fixedFullRe(`SELECT * FROM "order_books" WHERE (type = ? and order_symbol = ?)`)).
+			WithArgs([]driver.Value{orderType, "ICO"}...).
 			WillReturnRows(getRowsForOrderBooks(expOrderBooks))
 
 		orderBooks, err := repo.GetOrderBook(context.Background(), orderType)
@@ -212,15 +213,15 @@ func testGetOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, co
 	}
 }
 
-func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
+func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
-	expOrderBooks := getTestOrderBooks(2, models.ASK)
-	smt := `INSERT INTO %s_order_books(id, name, price, quantity, volume, order_time, type) VALUES %s`
+	expOrderBooks := getTestOrderBooks(uint(2), models.ASK)
+	smt := `INSERT INTO order_books(id, order_symbol, order_time, account_name, price, volume, symbol, type) VALUES %s`
 	valueStrings := []string{}
 	for range expOrderBooks {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
 	}
-	smt = fmt.Sprintf(smt, contract, strings.Join(valueStrings, ","))
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 	args := getArgsForOrderBooks(expOrderBooks)
 
 	m.ExpectBegin()
@@ -233,15 +234,15 @@ func testSaveOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, c
 	assert.Nil(t, err)
 }
 
-func testDeleteOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository, contract string) {
+func testDeleteOrderBook(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
-	expOrderBooks := getTestOrderBooks(2, models.ASK)
-	smt := `DELETE FROM %s_order_books WHERE ob_id IN (%s)`
+	expOrderBooks := getTestOrderBooks(uint(2), models.ASK)
+	smt := `DELETE FROM order_books WHERE ob_id IN (%s)`
 	valueArgs := []uint{}
 	for _, o := range expOrderBooks {
 		valueArgs = append(valueArgs, o.OBID)
 	}
-	smt = fmt.Sprintf(smt, contract, util.ArrayToString(valueArgs, ","))
+	smt = fmt.Sprintf(smt, util.ArrayToString(valueArgs, ","))
 
 	m.ExpectBegin()
 	m.ExpectExec(fixedFullRe(smt)).
