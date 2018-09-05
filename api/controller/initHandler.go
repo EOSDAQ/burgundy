@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"strings"
 	"time"
 
 	mw "burgundy/api/middleware"
@@ -66,30 +67,32 @@ func newUserHTTPHandler(eg *echo.Group, us service.UserService, jwtkey string) {
 		UserService: us,
 	}
 
-	// POST /api/v1/acct/user
-	eg.POST("", handler.CreateUser)
-	// POST /api/v1/acct/user/signin
-	eg.POST("/signin", handler.Login)
-
-	// METHOD /api/v1/acct/user/:accountName
-	r := eg.Group("/:accountName")
-
 	if jwtkey != "" {
-		r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+		eg.Use(middleware.JWTWithConfig(middleware.JWTConfig{
+			Skipper: func(c echo.Context) bool {
+				if c.Request().Method == "POST" && !strings.HasSuffix(c.Path(), "OTP") {
+					return true
+				}
+				return false
+			},
 			SigningKey:  []byte(jwtkey),
 			TokenLookup: "header:Authorization",
 		}))
 	}
 
-	r.GET("", handler.GetUser)
-	r.DELETE("", handler.DeleteUser)
+	// POST /api/v1/acct/user
+	eg.POST("/:accountName", handler.CreateUser)
+	eg.POST("/:accountName/signin", handler.Login)
 
-	r.POST("/confirmEmail", handler.ConfirmEmail)
-	r.DELETE("/revokeEmail", handler.RevokeEmail)
+	eg.GET("/:accountName", handler.GetUser)
+	eg.DELETE("/:accountName", handler.DeleteUser)
 
-	r.POST("/newOTP", handler.NewOTP)
-	r.DELETE("/revokeOTP", handler.RevokeOTP)
-	r.POST("/validateOTP", handler.ValidateOTP)
+	eg.POST("/:accountName/confirmEmail", handler.ConfirmEmail)
+	eg.DELETE("/:accountName/revokeEmail", handler.RevokeEmail)
+
+	eg.POST("/:accountName/newOTP", handler.NewOTP)
+	eg.DELETE("/:accountName/revokeOTP", handler.RevokeOTP)
+	eg.POST("/:accountName/validateOTP", handler.ValidateOTP)
 }
 
 func response(c echo.Context, code int, trID, errCode, errMsg string, result ...interface{}) error {
