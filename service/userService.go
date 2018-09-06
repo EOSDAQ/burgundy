@@ -48,7 +48,6 @@ func (uuc userUsecase) GetByID(ctx context.Context, accountName string) (u *mode
 		return nil, err
 	}
 
-	u.AccountHash = nil
 	u.EmailHash = nil
 
 	return
@@ -64,7 +63,6 @@ func (uuc userUsecase) Store(ctx context.Context, user *models.User) (u *models.
 		return nil, err
 	}
 
-	u.AccountHash = nil
 	u.EmailHash = nil
 
 	return
@@ -94,23 +92,16 @@ func (uuc userUsecase) Delete(ctx context.Context, accountName string) (result b
 }
 
 // Login ...
-func (uuc userUsecase) Login(ctx context.Context, accName, accHash string) (u *models.User, err error) {
+func (uuc userUsecase) Login(ctx context.Context, accName string) (ok bool, err error) {
 	innerCtx, cancel := context.WithTimeout(ctx, uuc.ctxTimeout)
 	defer cancel()
 
-	u, err = uuc.userRepo.GetByID(innerCtx, accName)
+	u, err := uuc.userRepo.GetByID(innerCtx, accName)
 	if err != nil {
-		return nil, errors.Annotatef(err, "Login GetByID[%s]", accName)
+		return false, errors.Annotatef(err, "Login GetByID[%s]", accName)
 	}
 
-	if !u.Login(accHash) {
-		return nil, errors.NotValidf("Login Invalid Hash[%s]", accHash)
-	}
-
-	u.AccountHash = nil
-	u.EmailHash = nil
-
-	return
+	return u.AccountName == accName, nil
 }
 
 // ConfirmEmail ...
@@ -130,7 +121,6 @@ func (uuc userUsecase) ConfirmEmail(ctx context.Context, accName, email, emailHa
 
 	u, err = uuc.userRepo.Update(innerCtx, dbuser)
 
-	u.AccountHash = nil
 	u.EmailHash = nil
 
 	return
@@ -151,7 +141,6 @@ func (uuc userUsecase) RevokeEmail(ctx context.Context, accName, email, emailHas
 
 	u, err = uuc.userRepo.Update(innerCtx, dbuser)
 
-	u.AccountHash = nil
 	u.EmailHash = nil
 
 	return

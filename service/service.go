@@ -33,7 +33,7 @@ type UserService interface {
 	Delete(ctx context.Context, accountName string) (bool, error)
 
 	// Login
-	Login(ctx context.Context, accountName, accountHash string) (*models.User, error)
+	Login(ctx context.Context, accountName string) (bool, error)
 
 	// Email
 	ConfirmEmail(ctx context.Context, accountName, email, emailHash string) (*models.User, error)
