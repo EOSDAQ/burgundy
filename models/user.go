@@ -13,7 +13,7 @@ type secretString = string
 // User ...
 type User struct {
 	gorm.Model  `json:"-"`
-	AccountName string `json:"accountName" gorm:"not null;unique"`
+	AccountName string        `json:"accountName" gorm:"not null;unique"`
 	AccountHash *secretString `json:"accountHash,omitempty" gorm:"not null"`
 
 	Email        string        `json:"email"`

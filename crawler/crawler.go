@@ -20,7 +20,7 @@ import (
 type Crawler struct {
 	api           *eosdaq.EosdaqAPI
 	EosdaqService service.EosdaqService
-	token         string
+	symbol        string
 }
 
 var mlog *zap.SugaredLogger
@@ -86,12 +86,12 @@ func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB
 	return nil
 }
 
-func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, token string,
+func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, symbol string,
 	d time.Duration, cancel <-chan os.Signal) error {
 	c := &Crawler{
 		api:           api,
 		EosdaqService: eosdaq,
-		token:         token,
+		symbol:        symbol,
 	}
 	return c.runCrawler(d, cancel)
 }
@@ -102,7 +102,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Ask")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.token))
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.symbol))
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
@@ -110,7 +110,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		for _ = range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Bid")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.token))
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.symbol))
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
@@ -119,7 +119,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		var result []*models.EosdaqTx
 		for _ = range t.C {
 			ctx := context.Background()
-			result, lastIdx = ic.api.GetActionTxs(lastIdx, ic.token)
+			result, lastIdx = ic.api.GetActionTxs(lastIdx, ic.symbol)
 			ic.EosdaqService.UpdateTransaction(ctx, result)
 		}
 	}(c, d)

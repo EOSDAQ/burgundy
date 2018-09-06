@@ -102,7 +102,7 @@ func (o OrderType) String() string {
 	case BID:
 		return "stbid"
 	case MATCH:
-		return "matched"
+		return "match"
 	case CANCEL:
 		return "cancel"
 	case REFUND:
@@ -207,7 +207,7 @@ type ContractData struct {
 	Memo     string `json:"memo"`
 }
 
-func (cd *ContractData) MarshalData(token string, data interface{}) (r *EOSData) {
+func (cd *ContractData) MarshalData(data interface{}) (r *EOSData) {
 	src, ok := data.(map[string]interface{})
 	if !ok {
 		return nil
@@ -222,10 +222,10 @@ func (cd *ContractData) MarshalData(token string, data interface{}) (r *EOSData)
 	cd.To = src["to"].(string)
 	cd.Quantity = src["quantity"].(string)
 	cd.Memo = src["memo"].(string)
-	return cd.Parse(token)
+	return cd.Parse()
 }
 
-func (cd *ContractData) Parse(token string) (r *EOSData) {
+func (cd *ContractData) Parse() (r *EOSData) {
 
 	var ok bool
 	if _, ok = eossysAccount[cd.From]; ok {
@@ -236,7 +236,7 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 	}
 
 	memos := strings.Split(cd.Memo, "@")
-	if memos[0] != "match" {
+	if memos[0] != MATCH.String() {
 		return nil
 	}
 
@@ -260,6 +260,7 @@ func (cd *ContractData) Parse(token string) (r *EOSData) {
 type EosdaqTx struct {
 	TXID          uint      `gorm:"primary_key"`
 	ID            int64     `json:"account_action_seq"`
+	OrderSymbol   string    `json:"orderSymbol"`
 	OrderTime     time.Time `json:"orderTime"`
 	TransactionID []byte    `json:"trx_id"`
 
