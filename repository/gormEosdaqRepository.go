@@ -25,7 +25,7 @@ func NewGormEosdaqRepository(Conn *gorm.DB, symbol string) EosdaqRepository {
 func (g *gormEosdaqRepository) GetLastTransactionID(ctx context.Context) int64 {
 	t := &models.EosdaqTx{}
 	scope := g.conn.Select([]string{"id"}).
-		Where("symbol = ?", g.symbol).
+		Where("order_symbol = ?", g.symbol).
 		Order("id desc").
 		First(&t)
 	if scope.Error != nil {
@@ -83,11 +83,11 @@ func (g *gormEosdaqRepository) SaveTransaction(ctx context.Context, txs []*model
 	valueArgs := []interface{}{}
 
 	for _, t := range txs {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?,?)")
 		valueArgs = append(valueArgs, t.GetArgs()...)
 	}
 
-	smt := `INSERT INTO eosdaq_txes(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
+	smt := `INSERT INTO eosdaq_txes(id, order_symbol, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
 	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 
 	scope := g.conn.Begin()

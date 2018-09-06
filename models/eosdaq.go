@@ -279,6 +279,7 @@ type EOSData struct {
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{
 		et.ID,
+		et.OrderSymbol,
 		et.OrderTime,
 		et.TransactionID,
 		et.AccountName,

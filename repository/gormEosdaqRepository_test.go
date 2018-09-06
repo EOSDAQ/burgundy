@@ -60,13 +60,14 @@ func getTestTxs(n uint) []*models.EosdaqTx {
 		o := &models.EosdaqTx{
 			TXID:          i,
 			ID:            int64(i * uint(util.RandNum(100))),
+			OrderSymbol:   "ICO",
 			OrderTime:     time.Now(),
 			TransactionID: []byte(util.RandString(32)),
 			EOSData: &models.EOSData{
 				AccountName: util.RandString(12),
 				Price:       uint64(util.RandNum(1000000)),
 				Volume:      uint64(util.RandNum(1000000)),
-				Symbol:      "ICO",
+				Symbol:      util.RandString(5),
 				Type:        models.OrderType(util.RandNum(4) + 1),
 			},
 		}
@@ -78,10 +79,10 @@ func getTestTxs(n uint) []*models.EosdaqTx {
 }
 
 func getRowsForTxs(txs []*models.EosdaqTx) *sqlmock.Rows {
-	var txFieldNames = []string{"tx_id", "id", "order_time", "transaction_id", "account_name", "price", "volume", "symbol", "type"}
+	var txFieldNames = []string{"tx_id", "id", "order_symbol", "order_time", "transaction_id", "account_name", "price", "volume", "symbol", "type"}
 	rows := sqlmock.NewRows(txFieldNames)
 	for _, t := range txs {
-		rows = rows.AddRow(t.TXID, t.ID, t.OrderTime, t.TransactionID, t.AccountName, t.Price, t.Volume, t.Symbol, t.Type)
+		rows = rows.AddRow(t.TXID, t.ID, t.OrderSymbol, t.OrderTime, t.TransactionID, t.AccountName, t.Price, t.Volume, t.Symbol, t.Type)
 		//fmt.Printf("rows : [%v]\n", rows)
 	}
 	return rows
@@ -181,10 +182,10 @@ func testGetTransactionByID(t *testing.T, m sqlmock.Sqlmock, repo EosdaqReposito
 func testSaveTransaction(t *testing.T, m sqlmock.Sqlmock, repo EosdaqRepository) {
 
 	expTx := getTestTxs(uint(2))
-	smt := `INSERT INTO eosdaq_txes(id, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
+	smt := `INSERT INTO eosdaq_txes(id, order_symbol, order_time, transaction_id, account_name, volume, symbol, type, price) VALUES %s`
 	valueStrings := []string{}
 	for range expTx {
-		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?)")
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?,?)")
 	}
 	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 	args := getArgsForTxs(expTx)
