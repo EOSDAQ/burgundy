@@ -73,7 +73,6 @@ func (e *EosdaqAPI) GetActionTxs(start int64, symbol string) (result []*models.E
 	var err error
 	out := &eos.ActionsResp{}
 	end = start
-	mlog.Infow("GetActionTxs", "acc", e.contract, "start", start)
 	out, err = e.GetActions(eos.GetActionsRequest{
 		AccountName: AN(e.contract),
 		Pos:         start + 1,

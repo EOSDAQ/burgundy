@@ -12,7 +12,7 @@ import (
 
 func prepareServer(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) bool {
 
-	log, err := util.InitLog("server", burgundy.GetString("logmode"))
+	log, err := util.InitLog("server", burgundy.GetString("loglevel"))
 	if err != nil {
 		log.Infow("InitLog", "err", errors.Details(err))
 		return false

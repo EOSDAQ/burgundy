@@ -30,13 +30,13 @@ type (
 var mlog *zap.SugaredLogger
 
 func init() {
-	mlog, _ = util.InitLog("controller", "console")
+	mlog, _ = util.InitLog("controller", "devel")
 }
 
 // InitHandler ...
 func InitHandler(burgundy *conf.ViperConfig, e *echo.Echo, db *gorm.DB) (err error) {
 
-	mlog, _ = util.InitLog("controller", burgundy.GetString("logmode"))
+	mlog, _ = util.InitLog("controller", burgundy.GetString("loglevel"))
 	timeout := time.Duration(burgundy.GetInt("timeout")) * time.Second
 
 	// Default Group

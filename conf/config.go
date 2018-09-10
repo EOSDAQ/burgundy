@@ -23,7 +23,6 @@ type DefaultConf struct {
 	EnvServerPROD  string
 
 	ConfServerPORT    int
-	ConfServerLOGMODE string
 	ConfServerTIMEOUT int
 	ConfAPILOGLEVEL   string
 
@@ -50,7 +49,6 @@ var defaultConf = DefaultConf{
 	EnvServerSTAGE:         ".env.stage",
 	EnvServerPROD:          ".env",
 	ConfServerPORT:         2333,
-	ConfServerLOGMODE:      "console",
 	ConfServerTIMEOUT:      30,
 	ConfAPILOGLEVEL:        "debug",
 	ConfEOSHOST:            "http://10.100.100.2",
@@ -109,7 +107,6 @@ func init() {
 	Burgundy, err = readConfig(map[string]interface{}{
 		"port":               defaultConf.ConfServerPORT,
 		"timeout":            defaultConf.ConfServerTIMEOUT,
-		"logmode":            defaultConf.ConfServerLOGMODE,
 		"loglevel":           defaultConf.ConfAPILOGLEVEL,
 		"profile":            false,
 		"profilePort":        6060,
@@ -127,7 +124,7 @@ func init() {
 		"db_name":            defaultConf.ConfDBNAME,
 		"aws_region":         defaultConf.ConfAWSRegion,
 		"aws_on":             defaultConf.ConfAWSOn,
-		"env":                "prod",
+		"env":                "devel",
 	})
 	if err != nil {
 		fmt.Printf("Error when reading config: %v\n", err)

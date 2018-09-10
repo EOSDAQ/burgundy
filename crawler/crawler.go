@@ -26,7 +26,7 @@ type Crawler struct {
 var mlog *zap.SugaredLogger
 
 func init() {
-	mlog, _ = util.InitLog("crawler", "console")
+	mlog, _ = util.InitLog("crawler", "devel")
 }
 
 func getTokens(tokenRepo _Repo.TokenRepository) (tokens []*models.Token) {
@@ -40,6 +40,8 @@ func getTokens(tokenRepo _Repo.TokenRepository) (tokens []*models.Token) {
 }
 
 func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
+
+	mlog, _ = util.InitLog("crawler", burgundy.GetString("loglevel"))
 
 	host := burgundy.GetString("eos_host")
 	port := burgundy.GetInt("eos_port")

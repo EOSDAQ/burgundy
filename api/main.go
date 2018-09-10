@@ -2,10 +2,8 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -15,12 +13,15 @@ import (
 	"time"
 
 	ct "burgundy/api/controller"
+	mw "burgundy/api/middleware"
 	conf "burgundy/conf"
 	_Repo "burgundy/repository"
+	"burgundy/util"
 
 	"github.com/juju/errors"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"go.uber.org/zap"
 )
 
 const (
@@ -43,6 +44,7 @@ var (
 	// Version for Program Version
 	Version string
 	svrInfo = fmt.Sprintf("burgundy %s(%s)", Version, BuildDate)
+	mlog    *zap.SugaredLogger
 )
 
 func init() {
@@ -58,17 +60,16 @@ func main() {
 		os.Exit(0)
 	}
 	Burgundy.SetProfile()
+	mlog, _ = util.InitLog("main", Burgundy.GetString("loglevel"))
 
-	f := apiLogFile("./burgundy-api.log")
-	defer f.Close()
-	e := echoInit(Burgundy, f)
+	e := echoInit(Burgundy)
 	sc := sigInit(e)
 
 	// Prepare Server
 	db := _Repo.InitDB(Burgundy)
 	defer db.Close()
 	if err := ct.InitHandler(Burgundy, e, db); err != nil {
-		fmt.Println("InitHandler error : ", errors.Details(err))
+		mlog.Errorw("InitHandler", "err", errors.Details(err))
 		os.Exit(1)
 	}
 
@@ -78,21 +79,10 @@ func main() {
 	startServer(Burgundy, e)
 }
 
-func apiLogFile(logfile string) *os.File {
-	// API Logging
-	f, err := os.OpenFile(logfile, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Println("apiLogFile error : ", err)
-		os.Exit(1)
-	}
-	return f
-}
-
-func echoInit(burgundy *conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
+func echoInit(burgundy *conf.ViperConfig) (e *echo.Echo) {
 
 	// Echo instance
 	e = echo.New()
-	e.Debug = true
 
 	// Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
@@ -107,12 +97,7 @@ func echoInit(burgundy *conf.ViperConfig, apiLogF *os.File) (e *echo.Echo) {
 	e.GET("/", func(c echo.Context) error { return c.String(http.StatusOK, "burgundy API Alive!\n") })
 	e.POST("/", func(c echo.Context) error { return c.String(http.StatusOK, "burgundy API Alive!\n") })
 
-	loggerConfig := middleware.DefaultLoggerConfig
-	loggerConfig.Output = apiLogF
-
-	e.Use(middleware.LoggerWithConfig(loggerConfig))
-	e.Logger.SetOutput(bufio.NewWriterSize(apiLogF, 1024*16))
-	e.Logger.SetLevel(burgundy.APILogLevel())
+	e.Use(mw.ZapLogger(mlog))
 	e.HideBanner = true
 
 	return e
@@ -148,11 +133,10 @@ func sigInit(e *echo.Echo) chan os.Signal {
 func startServer(burgundy *conf.ViperConfig, e *echo.Echo) {
 	// Start Server
 	apiServer := fmt.Sprintf("0.0.0.0:%d", burgundy.GetInt("port"))
-	log.Printf("%s => Starting server listen %s\n", svrInfo, apiServer)
+	mlog.Infow("Starting server", "info", svrInfo, "listen", apiServer)
 	fmt.Printf(banner, svrInfo, apiServer)
 
 	if err := e.Start(apiServer); err != nil {
-		fmt.Println(err)
-		e.Logger.Error(err)
+		mlog.Errorw("End server", "err", err)
 	}
 }
