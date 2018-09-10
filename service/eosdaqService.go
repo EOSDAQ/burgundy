@@ -31,17 +31,13 @@ func NewEosdaqService(burgundy *conf.ViperConfig,
 }
 
 // UpdateOrderbook ...
-func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook) (err error) {
-
-	if len(obs) == 0 {
-		return nil
-	}
+func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook, orderType models.OrderType) (err error) {
 
 	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
 	defer cancel()
 
 	// get db old
-	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, obs[0].Type)
+	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, orderType)
 	if err != nil {
 		mlog.Errorw("UpdateOrderbook get", "contract", eu.token.ContractAccount, "err", err)
 		return err
@@ -53,10 +49,15 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	}
 	// diff obs,db
 	addBooks := []*models.OrderBook{}
+	updBooks := []*models.OrderBook{}
 	for _, n := range obs {
 		key := fmt.Sprintf("%d.%s", n.ID, n.OrderSymbol)
-		if _, ok := orderMaps[key]; ok {
-			delete(orderMaps, key)
+		if o, ok := orderMaps[key]; ok {
+			if o.Volume == n.Volume {
+				delete(orderMaps, key)
+			} else {
+				updBooks = append(updBooks, n)
+			}
 		} else {
 			addBooks = append(addBooks, n)
 		}
@@ -68,6 +69,12 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 		mlog.Errorw("UpdateOrderbook save", "contract", eu.token.ContractAccount, "err", err, "add", addBooks)
 		return err
 	}
+
+	if err = eu.eosdaqRepo.UpdateOrderBook(innerCtx, updBooks); err != nil {
+		mlog.Errorw("UpdateOrderbook save", "contract", eu.token.ContractAccount, "err", err, "add", addBooks)
+		return err
+	}
+
 	delBooks := []*models.OrderBook{}
 	for _, d := range orderMaps {
 		delBooks = append(delBooks, d)

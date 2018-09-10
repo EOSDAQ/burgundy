@@ -48,7 +48,7 @@ type UserService interface {
 
 // EosdaqService ...
 type EosdaqService interface {
-	UpdateOrderbook(ctx context.Context, obs []*models.OrderBook) error
+	UpdateOrderbook(ctx context.Context, obs []*models.OrderBook, orderType models.OrderType) error
 	GetLastTransactionID(ctx context.Context) int64
 	UpdateTransaction(ctx context.Context, txs []*models.EosdaqTx) error
 }

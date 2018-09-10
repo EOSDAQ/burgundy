@@ -134,6 +134,28 @@ func (g *gormEosdaqRepository) SaveOrderBook(ctx context.Context, obs []*models.
 	return nil
 }
 
+func (g *gormEosdaqRepository) UpdateOrderBook(ctx context.Context, obs []*models.OrderBook) error {
+
+	if len(obs) == 0 {
+		return nil
+	}
+
+	valueArgs := []interface{}{}
+	for _, o := range obs {
+		valueArgs = append(valueArgs, []interface{}{o.ID, o.Volume}...)
+	}
+
+	smt := `UPDATE order_books SET volume=? WHERE id=?`
+
+	scope := g.conn.Begin()
+	if err := scope.Exec(smt, valueArgs...).Error; err != nil {
+		scope.Rollback()
+		return err
+	}
+	scope.Commit()
+	return nil
+}
+
 func (g *gormEosdaqRepository) DeleteOrderBook(ctx context.Context, obs []*models.OrderBook) error {
 
 	if len(obs) == 0 {
