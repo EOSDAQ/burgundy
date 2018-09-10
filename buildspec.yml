@@ -12,6 +12,7 @@ phases:
     commands:
       - echo Entered the build phase...
       - echo Build started on `date` for $REPOSITORY_URI
+      - make vendor-update
       - make build
       - docker pull $REPOSITORY_URI:latest || true
       - docker build --cache-from $REPOSITORY_URI:latest --build-arg BUILD_PORT=1313 -t $REPOSITORY_URI:latest .
