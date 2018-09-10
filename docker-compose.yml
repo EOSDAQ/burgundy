@@ -1,5 +1,24 @@
 version: '3.1'
 services:
+  tiffanyblue:
+    ports:
+      - "18890:1323"
+    image: eosdaq/tiffanyblue
+    container_name: eos_tiffany
+    networks:
+      - eos_net
+    depends_on:
+      - eos_db
+    links:
+      - eos_db
+    environment:
+      - DB_HOST=eos_db
+      - DB_PORT=3306
+      - DB_NAME=eosdaq
+      - DB_USER=eosdaquser
+      - DB_PASS=eosdaqvotmdnjem
+      - ENV=devel
+      - AWS_ON=false
   burgundy:
     ports:
       - "18889:1313"
@@ -8,7 +27,9 @@ services:
     networks:
       - eos_net
     depends_on:
-      - db
+      - eos_db
+    links:
+      - eos_db
     environment:
       - EOSDAQMANAGE=${EOSDAQMANAGE}
       - EOS_HOST=http://local_nodeos
@@ -17,7 +38,7 @@ services:
       - DB_USER=eosdaquser
       - DB_PASS=eosdaqvotmdnjem
       - ENV=devel
-  db:
+  eos_db:
     ports:
       - "3306:3306"
     image: mariadb

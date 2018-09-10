@@ -13,6 +13,7 @@
 package service
 
 import (
+	"burgundy/conf"
 	"burgundy/models"
 	"burgundy/util"
 	"context"
@@ -23,7 +24,7 @@ import (
 var mlog *zap.SugaredLogger
 
 func init() {
-	mlog, _ = util.InitLog("service", "console")
+	mlog, _ = util.InitLog("service", conf.Burgundy.GetString("loglevel"))
 }
 
 // UserService ...

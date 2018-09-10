@@ -60,7 +60,7 @@ func TestContractData_Parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cd.Parse("IPOS"); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.cd.Parse(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ContractData.Parse() = %v, want %v", got, tt.want)
 			}
 		})

@@ -1,0 +1,110 @@
+image: golang:latest
+
+variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+
+before_script:
+    - export GO_PROJECT_PATH="$GOPATH/src/gitlab.com/$CI_PROJECT_NAMESPACE"
+    - echo $GO_PROJECT_PATH
+    - mkdir -p $GO_PROJECT_PATH
+    - export GO_PROJECT_PATH="$GO_PROJECT_PATH/$CI_PROJECT_NAME"
+    - ln -s $(pwd) $GO_PROJECT_PATH
+    - echo $GO_PROJECT_PATH
+    - cd $GO_PROJECT_PATH
+    - mkdir -p vendor
+    - ls -al vendor # Dont' delete this line!!
+        
+stages:
+    - setup
+    - verify
+    - style
+    - build
+    - deploy
+
+setup:
+    stage: setup
+    script:
+        - make vendor-update
+    cache:
+        key: "$CI_PROJECT_NAME-setup-cache"
+        untracked: true
+        paths:
+            - vendor/
+    artifacts:
+        paths:
+            - vendor/
+
+go_test:
+    stage: verify
+    dependencies:
+        - setup
+    script:
+        - make test
+    except:
+        - master
+
+megacheck:
+    stage: verify
+    dependencies:
+        - setup
+    script:
+        - make megacheck
+    except:
+        - master
+
+go_fmt:
+    stage: style
+    dependencies:
+        - setup
+    script:
+        - make fmt
+    except:
+        - master
+
+go_vet:
+    stage: style
+    dependencies:
+        - setup
+    script:
+        - make vet
+    except:
+        - master
+
+golint:
+    stage: style
+    dependencies:
+        - setup
+    script:
+        - make lint
+    except:
+        - master
+
+build:
+    stage: build
+    dependencies:
+        - setup
+    script:
+        - make swagger build
+    artifacts:
+        paths:
+            - bin/
+    only:
+        - master
+
+docker.image:
+    stage: deploy
+    image: docker:latest
+    dependencies:
+        - build
+    services:
+        - docker:dind
+    before_script:
+        - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    script:
+        - docker pull $CI_REGISTRY_IMAGE:latest || true
+        - docker build --cache-from $CI_REGISTRY_IMAGE:latest --build-arg BUILD_PORT=1313 -t $CI_REGISTRY_IMAGE:$CI_BUILD_REF -t $CI_REGISTRY_IMAGE:latest .
+        - docker push $CI_REGISTRY_IMAGE:$CI_BUILD_REF
+        - docker push $CI_REGISTRY_IMAGE:latest
+    only:
+        - master

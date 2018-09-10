@@ -7,10 +7,11 @@ BIN		= $(GOPATH)/bin
 DESTDIR = /opt/$(PACKAGE)
 BASE    = $(GOPATH)/src/$(PACKAGE)
 
-PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... 2>&1 | grep -v "^$(PACKAGE)/vendor/" | grep -v nocompile | grep -v logs))
+PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... 2>&1 | grep -v "^$(PACKAGE)/vendor/" | grep -v nocompile | grep -v logs | grep -v testset))
 
 #GOENV   = CGO_LDFLAGS_ALLOW='-fopenmp'
-#GOENV   = CGO_ENABLED=0 GOOS=linux
+GOENV   = CGO_ENABLED=0 GOOS=linux
+GOBUILD = ${GOENV} go
 GO      = go
 GODOC   = godoc
 #GOFMT   = goreturns
@@ -21,14 +22,20 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 GOV = $(shell $(GO) version)
 SUDO = ""
 ifneq ($(shell id -u -r),0)
-SUDO = sudo
+SUDO = sudo -E
 endif
 
 BUILDTAG=-tags 'release'
 
 .PHONY: all
-all: test megacheck vendor fmt vet lint swagger | $(BASE) ; $(info $(M) building executable… ) @ ## Build program binary
-	$Q cd $(BASE)/api && $(GO) build -i \
+all: test megacheck fmt vet lint swagger build | $(BASE) ; $(info $(M) building all steps… ) @ ## Build all steps
+
+.PHONY: check
+check: test megacheck fmt vet lint | $(BASE) ; $(info $(M) check all steps… ) @ ## Check all steps
+
+.PHONY: build
+build: $(BASE) ; $(info $(M) building executable… ) @ ## Build program binary
+	$Q cd $(BASE)/api && $(GOBUILD) build -i \
 		$(BUILDTAG) \
 		-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE)' \
 		-o $(BASE)/bin/$(PACKAGE)
@@ -40,7 +47,7 @@ all: test megacheck vendor fmt vet lint swagger | $(BASE) ; $(info $(M) building
 
 .PHONY: docker
 docker: ; $(info $(M) building docker image… ) @ ## Build for docker image
-	$Q $(SUDO) docker build --cache-from eosdaq/$(PACKAGE):latest --build-arg VERSION=$(VERSION) --build-arg BUILD_DATE=$(DATE) --build-arg BUILD_PKG=$(PACKAGE) --build-arg BUILD_PORT=1313 -t eosdaq/$(PACKAGE) .
+	$Q $(SUDO) docker build --cache-from eosdaq/$(PACKAGE):latest --build-arg BUILD_PORT=1313 -t eosdaq/$(PACKAGE) .
 
 .PHONY: gobuild
 gobuild: ; $(info $(M) building gobuild image… ) @ ## Build for gobuild image
@@ -101,34 +108,34 @@ $(BIN)/megacheck: | $(BASE) ;  $(info $(M) building gocheck…)
 
 .PHONY: test
 test: | $(BASE) ; $(info $(M) running go test…) @ ## Run go test on all source files
-	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		cd $$d ; \
 		$(GO) test -race -cover $(BUILDTAG) || ret=$$? ; \
 		cd .. ; \
 	 done ; exit $$ret
 
 .PHONY: lint
-lint: $(BASE) $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
+lint: $(BASE) $(GOLINT) ; $(info $(M) running go lint…) @ ## Run golint
 	$Q cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
 		test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	 done ; exit $$ret
 
 .PHONY: vet
-vet: ; $(info $(M) running go vet…) @ ## Run go vet on all source files
-	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+vet: $(BASE) ; $(info $(M) running go vet…) @ ## Run go vet on all source files
+	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		cd $$d ; \
 		$(GO) vet $(BUILDTAG) || ret=$$? ; \
 		cd .. ; \
 	 done ; exit $$ret
 
 .PHONY: fmt
-fmt: $(GOFMT) ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
-	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+fmt: $(GOFMT) ; $(info $(M) running go fmt…) @ ## Run gofmt on all source files
+	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		$(GOFMT) -l -w $$d/*.go || ret=$$? ; \
 	 done ; exit $$ret
 
 .PHONY: megacheck
-megacheck: $(GOCHECK) ; $(info $(M) running gocheck…) @ ## Run gocheck on all source files
+megacheck: $(GOCHECK) ; $(info $(M) running go check…) @ ## Run gocheck on all source files
 	$Q cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
 		test -z "$$($(GOCHECK) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	 done ; exit $$ret

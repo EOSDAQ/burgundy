@@ -1,6 +1,7 @@
 package util
 
 import (
+	"strings"
 	"time"
 
 	"github.com/juju/errors"
@@ -16,18 +17,23 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 var mlog *zap.SugaredLogger
 
 // InitLog returns logger instance.
-func InitLog(name string, logMode string) (log *zap.SugaredLogger, err error) {
+func InitLog(name string, env string) (log *zap.SugaredLogger, err error) {
 
-	var cfg zap.Config
-	var enccfg zapcore.EncoderConfig
-	if logMode == "json" {
+	cfg := zap.NewDevelopmentConfig()
+	cfg.Encoding = "console"
+	cfg.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+	enccfg := zap.NewDevelopmentEncoderConfig()
+
+	switch strings.ToLower(env) {
+	case "info":
+		cfg.Encoding = "json"
+		cfg.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+		enccfg = zap.NewDevelopmentEncoderConfig()
+	case "error":
 		cfg = zap.NewProductionConfig()
 		cfg.Encoding = "json"
+		cfg.Level = zap.NewAtomicLevelAt(zapcore.ErrorLevel)
 		enccfg = zap.NewProductionEncoderConfig()
-	} else {
-		cfg = zap.NewDevelopmentConfig()
-		cfg.Encoding = "console"
-		enccfg = zap.NewDevelopmentEncoderConfig()
 	}
 	enccfg.EncodeTime = TimeEncoder
 	enccfg.CallerKey = ""

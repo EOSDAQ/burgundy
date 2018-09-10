@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -16,10 +15,9 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var src = rand.NewSource(time.Now().UnixNano())
-
 // NewID ...
 func NewID() (id string) {
+	src := rand.NewSource(time.Now().UnixNano())
 	rnum := rand.New(src).Intn(10000)
 	id = fmt.Sprintf("%s%04d", strings.Replace(time.Now().Truncate(time.Millisecond).Format("20060102150405.00"), ".", "", -1), rnum)
 	return
@@ -28,6 +26,7 @@ func NewID() (id string) {
 // RandString : make Random String
 func RandString(n int) string {
 	b := make([]byte, n)
+	src := rand.NewSource(time.Now().UnixNano())
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
@@ -44,6 +43,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
+// ConvertBase ...
 func ConvertBase(n, base int) (s string) {
 	if n == 0 {
 		return "0"
@@ -58,11 +58,13 @@ func ConvertBase(n, base int) (s string) {
 
 // RandNum ...
 func RandNum(max int) int {
+	src := rand.NewSource(time.Now().UnixNano())
 	return rand.New(src).Intn(max)
 }
 
 // IntRayleighCDF ...
 func IntRayleighCDF() int {
+	src := rand.NewSource(time.Now().UnixNano())
 	rnum := rand.New(src).Float64()
 	return int(math.Sqrt(-2 * math.Log(float64(1)-rnum)))
 }
@@ -70,12 +72,4 @@ func IntRayleighCDF() int {
 // ArrayToString ...
 func ArrayToString(a []uint, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
-}
-
-func ParseEosFloat(str string) (uint64, error) {
-	val, err := strconv.ParseFloat(str, 64)
-	if err != nil {
-		return uint64(0), err
-	}
-	return uint64(val*100000) / 10, nil
 }

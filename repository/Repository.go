@@ -34,7 +34,7 @@ import (
 var mlog *zap.SugaredLogger
 
 func init() {
-	mlog, _ = util.InitLog("repository", "console")
+	mlog, _ = util.InitLog("repository", "devel")
 }
 
 func makeDatabase(burgundy *conf.ViperConfig) {
@@ -82,7 +82,7 @@ func makeDatabase(burgundy *conf.ViperConfig) {
 // InitDB ...
 func InitDB(burgundy *conf.ViperConfig) *gorm.DB {
 
-	mlog, _ = util.InitLog("repository", burgundy.GetString("logmode"))
+	mlog, _ = util.InitLog("repository", burgundy.GetString("loglevel"))
 
 	makeDatabase(burgundy)
 

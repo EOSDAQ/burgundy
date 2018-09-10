@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEOSAPI(t *testing.T) {
+func _localTest(t *testing.T) {
 
 	Burgundy := conf.Burgundy
 	Burgundy.Set("eosdaqmanage", "5K8q9AzWV6ztfu16LHrngHG2Ts4SdzDPQhYCpTUC4Fx9jsnmBbo")
@@ -30,10 +30,10 @@ func TestEOSAPI(t *testing.T) {
 	eosapi.contract = "eosdaqoooo2o"
 
 	t.Run("GetAsk", func(t *testing.T) {
-		assert.NotNil(t, eosapi.GetAsk())
+		assert.NotNil(t, eosapi.GetAsk("IPOS"))
 	})
 	t.Run("GetBid", func(t *testing.T) {
-		assert.NotNil(t, eosapi.GetBid())
+		assert.NotNil(t, eosapi.GetBid("IPOS"))
 	})
 	t.Run("GetActionTxs", func(t *testing.T) {
 		r, end := eosapi.GetActionTxs(int64(0), "IPOS")

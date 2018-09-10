@@ -14,7 +14,7 @@ import (
 
 type userUsecase struct {
 	userRepo   repository.UserRepository
-	eosAPI     *eosdaq.EosdaqAPI
+	eosAPI     *eosdaq.API
 	ctxTimeout time.Duration
 }
 

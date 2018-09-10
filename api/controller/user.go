@@ -157,6 +157,7 @@ func (h *HTTPUserHandler) Login(c echo.Context) (err error) {
 	})
 }
 
+// EmailRequest ...
 type EmailRequest struct {
 	Email     string `json:"email"`
 	EmailHash string `json:"emailHash"`
@@ -262,6 +263,7 @@ func (h *HTTPUserHandler) RevokeEmail(c echo.Context) (err error) {
 	})
 }
 
+// NewOTP ...
 func (h *HTTPUserHandler) NewOTP(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
@@ -297,6 +299,7 @@ func (h *HTTPUserHandler) NewOTP(c echo.Context) (err error) {
 	})
 }
 
+// RevokeOTP ...
 func (h *HTTPUserHandler) RevokeOTP(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
@@ -325,6 +328,7 @@ func (h *HTTPUserHandler) RevokeOTP(c echo.Context) (err error) {
 	})
 }
 
+// ValidateOTP ...
 func (h *HTTPUserHandler) ValidateOTP(c echo.Context) (err error) {
 	trID := c.Response().Header().Get(echo.HeaderXRequestID)
 	accName := c.Param("accountName")
