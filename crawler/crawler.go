@@ -106,16 +106,16 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		t := time.NewTicker(d)
 		for range t.C {
 			ctx := context.Background()
-			//mlog.Infow("Crawler UpdateOrderbook Ask")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.symbol))
+			//mlog.Infow("Crawler UpdateOrderbook Bid")
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.symbol), models.BID)
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
 		for range t.C {
 			ctx := context.Background()
-			//mlog.Infow("Crawler UpdateOrderbook Bid")
-			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.symbol))
+			//mlog.Infow("Crawler UpdateOrderbook Ask")
+			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.symbol), models.ASK)
 		}
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {

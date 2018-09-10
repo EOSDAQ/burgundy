@@ -31,17 +31,13 @@ func NewEosdaqService(burgundy *conf.ViperConfig,
 }
 
 // UpdateOrderbook ...
-func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook) (err error) {
-
-	if len(obs) == 0 {
-		return nil
-	}
+func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.OrderBook, orderType models.OrderType) (err error) {
 
 	innerCtx, cancel := context.WithTimeout(ctx, eu.ctxTimeout)
 	defer cancel()
 
 	// get db old
-	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, obs[0].Type)
+	orderBooks, err := eu.eosdaqRepo.GetOrderBook(innerCtx, orderType)
 	if err != nil {
 		mlog.Errorw("UpdateOrderbook get", "contract", eu.token.ContractAccount, "err", err)
 		return err
