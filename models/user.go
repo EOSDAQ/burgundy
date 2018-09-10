@@ -55,12 +55,12 @@ func (u *User) Validate() bool {
 
 // NeedRegister ...
 func (u *User) NeedRegister() bool {
-	return u.EmailConfirm && u.OTPConfirm && !u.Registered
+	return u.EmailConfirm && !u.Registered
 }
 
 // NeedUnregister ...
 func (u *User) NeedUnregister() bool {
-	return !(u.EmailConfirm && u.OTPConfirm) && u.Registered
+	return !u.EmailConfirm && u.Registered
 }
 
 // UpdateRegister ...
