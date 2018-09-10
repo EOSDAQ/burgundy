@@ -158,10 +158,10 @@ func TestQueries(t *testing.T) {
 		funcName := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 		funcName = filepath.Ext(funcName)
 		funcName = strings.TrimPrefix(funcName, ".")
+		m, repo := newRepo()
+		defer checkMock(t, m)
 		t.Run(funcName, func(t *testing.T) {
 			t.Parallel()
-			m, repo := newRepo()
-			defer checkMock(t, m)
 			f(t, m, repo)
 		})
 	}

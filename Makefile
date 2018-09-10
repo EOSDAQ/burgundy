@@ -7,7 +7,7 @@ BIN		= $(GOPATH)/bin
 DESTDIR = /opt/$(PACKAGE)
 BASE    = $(GOPATH)/src/$(PACKAGE)
 
-PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... 2>&1 | grep -v "^$(PACKAGE)/vendor/" | grep -v nocompile | grep -v logs))
+PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... 2>&1 | grep -v "^$(PACKAGE)/vendor/" | grep -v nocompile | grep -v logs | grep -v testset))
 
 #GOENV   = CGO_LDFLAGS_ALLOW='-fopenmp'
 GOENV   = CGO_ENABLED=0 GOOS=linux
@@ -108,7 +108,7 @@ $(BIN)/megacheck: | $(BASE) ;  $(info $(M) building gocheck…)
 
 .PHONY: test
 test: | $(BASE) ; $(info $(M) running go test…) @ ## Run go test on all source files
-	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		cd $$d ; \
 		$(GO) test -race -cover $(BUILDTAG) || ret=$$? ; \
 		cd .. ; \
@@ -122,7 +122,7 @@ lint: $(BASE) $(GOLINT) ; $(info $(M) running go lint…) @ ## Run golint
 
 .PHONY: vet
 vet: $(BASE) ; $(info $(M) running go vet…) @ ## Run go vet on all source files
-	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+	$Q cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		cd $$d ; \
 		$(GO) vet $(BUILDTAG) || ret=$$? ; \
 		cd .. ; \
@@ -130,7 +130,7 @@ vet: $(BASE) ; $(info $(M) running go vet…) @ ## Run go vet on all source file
 
 .PHONY: fmt
 fmt: $(GOFMT) ; $(info $(M) running go fmt…) @ ## Run gofmt on all source files
-	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v /vendor/ | grep -v nocompile); do \
+	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... 2>&1 | grep -v vendor | grep -v nocompile | grep -v testset); do \
 		$(GOFMT) -l -w $$d/*.go || ret=$$? ; \
 	 done ; exit $$ret
 

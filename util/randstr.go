@@ -16,10 +16,9 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var src = rand.NewSource(time.Now().UnixNano())
-
 // NewID ...
 func NewID() (id string) {
+	src := rand.NewSource(time.Now().UnixNano())
 	rnum := rand.New(src).Intn(10000)
 	id = fmt.Sprintf("%s%04d", strings.Replace(time.Now().Truncate(time.Millisecond).Format("20060102150405.00"), ".", "", -1), rnum)
 	return
@@ -28,6 +27,7 @@ func NewID() (id string) {
 // RandString : make Random String
 func RandString(n int) string {
 	b := make([]byte, n)
+	src := rand.NewSource(time.Now().UnixNano())
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
@@ -58,11 +58,13 @@ func ConvertBase(n, base int) (s string) {
 
 // RandNum ...
 func RandNum(max int) int {
+	src := rand.NewSource(time.Now().UnixNano())
 	return rand.New(src).Intn(max)
 }
 
 // IntRayleighCDF ...
 func IntRayleighCDF() int {
+	src := rand.NewSource(time.Now().UnixNano())
 	rnum := rand.New(src).Float64()
 	return int(math.Sqrt(-2 * math.Log(float64(1)-rnum)))
 }
