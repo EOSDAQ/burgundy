@@ -49,10 +49,15 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 	}
 	// diff obs,db
 	addBooks := []*models.OrderBook{}
+	updBooks := []*models.OrderBook{}
 	for _, n := range obs {
 		key := fmt.Sprintf("%d.%s", n.ID, n.OrderSymbol)
-		if _, ok := orderMaps[key]; ok {
-			delete(orderMaps, key)
+		if o, ok := orderMaps[key]; ok {
+			if o.Volume == n.Volume {
+				delete(orderMaps, key)
+			} else {
+				updBooks = append(updBooks, n)
+			}
 		} else {
 			addBooks = append(addBooks, n)
 		}
@@ -64,6 +69,12 @@ func (eu eosdaqUsecase) UpdateOrderbook(ctx context.Context, obs []*models.Order
 		mlog.Errorw("UpdateOrderbook save", "contract", eu.token.ContractAccount, "err", err, "add", addBooks)
 		return err
 	}
+
+	if err = eu.eosdaqRepo.UpdateOrderBook(innerCtx, updBooks); err != nil {
+		mlog.Errorw("UpdateOrderbook save", "contract", eu.token.ContractAccount, "err", err, "add", addBooks)
+		return err
+	}
+
 	delBooks := []*models.OrderBook{}
 	for _, d := range orderMaps {
 		delBooks = append(delBooks, d)
