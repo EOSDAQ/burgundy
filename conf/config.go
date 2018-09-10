@@ -189,6 +189,7 @@ func readConfig(defaults map[string]interface{}) (*ViperConfig, error) {
 	}, nil
 }
 
+// InitAWSSSM ...
 func (vp *ViperConfig) InitAWSSSM() (err error) {
 	region := vp.Viper.GetString("aws_region")
 	sess, err := session.NewSessionWithOptions(session.Options{
@@ -203,6 +204,7 @@ func (vp *ViperConfig) InitAWSSSM() (err error) {
 	return nil
 }
 
+// GetString ...
 func (vp *ViperConfig) GetString(key string) string {
 	if v, ok := vp.cacheString[key]; ok {
 		return v
@@ -226,6 +228,7 @@ func (vp *ViperConfig) GetString(key string) string {
 	return vp.cacheString[key]
 }
 
+// GetInt ...
 func (vp *ViperConfig) GetInt(key string) int {
 	if v, ok := vp.cacheInt[key]; ok {
 		return v

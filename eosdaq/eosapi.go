@@ -10,16 +10,20 @@ import (
 	"github.com/juju/errors"
 )
 
-var AN = eos.AN
-var PN = eos.PN
-var ActN = eos.ActN
+// EOS defines
+var (
+	AN   = eos.AN
+	PN   = eos.PN
+	ActN = eos.ActN
+)
 
 func init() {
-	eos.RegisterAction(AN("eosio"), ActN("enroll"), EosdaqAction{})
-	eos.RegisterAction(AN("eosio"), ActN("drop"), EosdaqAction{})
+	eos.RegisterAction(AN("eosio"), ActN("enroll"), ActionData{})
+	eos.RegisterAction(AN("eosio"), ActN("drop"), ActionData{})
 	//eos.Debug = true
 }
 
+// EosNet ...
 type EosNet struct {
 	host     string
 	port     int
@@ -27,39 +31,43 @@ type EosNet struct {
 	manage   string
 }
 
+// NewEosnet ...
 func NewEosnet(host string, port int, contract, manage string) *EosNet {
 	return &EosNet{host, port, contract, manage}
 }
 
-type EosdaqAPI struct {
+// API ...
+type API struct {
 	*eos.API
 	contract string
 	manage   string
 }
 
-func NewAPI(burgundy *conf.ViperConfig, eosnet *EosNet) (*EosdaqAPI, error) {
+// NewAPI ...
+func NewAPI(burgundy *conf.ViperConfig, eosnet *EosNet) (*API, error) {
 	api := eos.New(fmt.Sprintf("%s:%d", eosnet.host, eosnet.port))
 
 	keys := strings.Split(burgundy.GetString(eosnet.manage), ",")
 	if keys[0] == "" {
-		return nil, errors.Errorf("NewAPI no keys", "contract", eosnet.manage)
-	} else {
-		keyBag := eos.NewKeyBag()
-		for _, key := range keys {
-			if err := keyBag.Add(key); err != nil {
-				return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
-			}
-		}
-		api.SetSigner(keyBag)
+		return nil, errors.Errorf("NewAPI no keys contract[%s]", eosnet.manage)
 	}
+
+	keyBag := eos.NewKeyBag()
+	for _, key := range keys {
+		if err := keyBag.Add(key); err != nil {
+			return nil, errors.Annotatef(err, "New API contract[%s] add key error [%s]", eosnet.contract, key)
+		}
+	}
+	api.SetSigner(keyBag)
 
 	if burgundy.GetString("loglevel") == "debug" {
 		api.Debug = true
 	}
-	return &EosdaqAPI{api, eosnet.contract, eosnet.manage}, nil
+	return &API{api, eosnet.contract, eosnet.manage}, nil
 }
 
-func (e *EosdaqAPI) DoAction(action *eos.Action) error {
+// DoAction ...
+func (e *API) DoAction(action *eos.Action) error {
 	resp, err := e.SignPushActions(action)
 	if err != nil {
 		mlog.Infow("ERROR calling : ", "err", err)
@@ -69,11 +77,10 @@ func (e *EosdaqAPI) DoAction(action *eos.Action) error {
 	return err
 }
 
-func (e *EosdaqAPI) GetActionTxs(start int64, symbol string) (result []*models.EosdaqTx, end int64) {
-	var err error
-	out := &eos.ActionsResp{}
+// GetActionTxs ...
+func (e *API) GetActionTxs(start int64, symbol string) (result []*models.EosdaqTx, end int64) {
 	end = start
-	out, err = e.GetActions(eos.GetActionsRequest{
+	out, err := e.GetActions(eos.GetActionsRequest{
 		AccountName: AN(e.contract),
 		Pos:         start + 1,
 		Offset:      int64(100),
@@ -113,14 +120,17 @@ func (e *EosdaqAPI) GetActionTxs(start int64, symbol string) (result []*models.E
 	return result, end
 }
 
-func (e *EosdaqAPI) GetAsk(symbol string) (result []*models.OrderBook) {
+// GetAsk ...
+func (e *API) GetAsk(symbol string) (result []*models.OrderBook) {
 	return e.getOrderBook(symbol, models.ASK)
 }
-func (e *EosdaqAPI) GetBid(symbol string) (result []*models.OrderBook) {
+
+// GetBid ...
+func (e *API) GetBid(symbol string) (result []*models.OrderBook) {
 	return e.getOrderBook(symbol, models.BID)
 }
 
-func (e *EosdaqAPI) getOrderBook(symbol string, orderType models.OrderType) (result []*models.OrderBook) {
+func (e *API) getOrderBook(symbol string, orderType models.OrderType) (result []*models.OrderBook) {
 	var err error
 	out := &eos.GetTableRowsResp{More: true}
 	end := uint(0)

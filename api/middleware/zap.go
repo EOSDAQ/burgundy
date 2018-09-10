@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// ZapLogger ...
 func ZapLogger(log *zap.SugaredLogger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

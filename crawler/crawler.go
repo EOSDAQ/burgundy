@@ -17,8 +17,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// Crawler ...
 type Crawler struct {
-	api           *eosdaq.EosdaqAPI
+	api           *eosdaq.API
 	EosdaqService service.EosdaqService
 	symbol        string
 }
@@ -39,6 +40,7 @@ func getTokens(tokenRepo _Repo.TokenRepository) (tokens []*models.Token) {
 	return tokens
 }
 
+// InitModule ...
 func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB) error {
 
 	mlog, _ = util.InitLog("crawler", burgundy.GetString("loglevel"))
@@ -76,19 +78,20 @@ func InitModule(burgundy *conf.ViperConfig, cancel <-chan os.Signal, db *gorm.DB
 		eosRepo := _Repo.NewGormEosdaqRepository(db, t.Symbol)
 		eossvc, err := service.NewEosdaqService(burgundy, t, eosRepo, tokenRepo, timeout)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewSvc failed token[%s]", t)
+			return errors.Annotatef(err, "InitModule NewSvc failed token[%s]", t.Symbol)
 		}
 
 		err = NewCrawler(api, eossvc, t.Symbol, crawlTimer, cancel)
 		if err != nil {
-			return errors.Annotatef(err, "InitModule NewCrawler failed token[%s]", t)
+			return errors.Annotatef(err, "InitModule NewCrawler failed token[%s]", t.Symbol)
 		}
 	}
 
 	return nil
 }
 
-func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, symbol string,
+// NewCrawler ...
+func NewCrawler(api *eosdaq.API, eosdaq service.EosdaqService, symbol string,
 	d time.Duration, cancel <-chan os.Signal) error {
 	c := &Crawler{
 		api:           api,
@@ -101,7 +104,7 @@ func NewCrawler(api *eosdaq.EosdaqAPI, eosdaq service.EosdaqService, symbol stri
 func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
-		for _ = range t.C {
+		for range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Ask")
 			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetAsk(ic.symbol))
@@ -109,7 +112,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 	}(c, d)
 	go func(ic *Crawler, d time.Duration) {
 		t := time.NewTicker(d)
-		for _ = range t.C {
+		for range t.C {
 			ctx := context.Background()
 			//mlog.Infow("Crawler UpdateOrderbook Bid")
 			ic.EosdaqService.UpdateOrderbook(ctx, ic.api.GetBid(ic.symbol))
@@ -119,7 +122,7 @@ func (c *Crawler) runCrawler(d time.Duration, cancel <-chan os.Signal) error {
 		t := time.NewTicker(d)
 		lastIdx := ic.EosdaqService.GetLastTransactionID(context.Background())
 		var result []*models.EosdaqTx
-		for _ = range t.C {
+		for range t.C {
 			ctx := context.Background()
 			result, lastIdx = ic.api.GetActionTxs(lastIdx, ic.symbol)
 			ic.EosdaqService.UpdateTransaction(ctx, result)

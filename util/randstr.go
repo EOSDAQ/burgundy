@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -44,6 +43,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
+// ConvertBase ...
 func ConvertBase(n, base int) (s string) {
 	if n == 0 {
 		return "0"
@@ -72,12 +72,4 @@ func IntRayleighCDF() int {
 // ArrayToString ...
 func ArrayToString(a []uint, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
-}
-
-func ParseEosFloat(str string) (uint64, error) {
-	val, err := strconv.ParseFloat(str, 64)
-	if err != nil {
-		return uint64(0), err
-	}
-	return uint64(val*100000) / 10, nil
 }

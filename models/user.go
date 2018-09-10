@@ -24,10 +24,12 @@ type User struct {
 	Registered bool   `json:"-"`
 }
 
+// String ...
 func (u *User) String() string {
 	return fmt.Sprintf("AccountName[%s] Email[%s]", u.AccountName, u.Email)
 }
 
+// ConfirmEmail ...
 func (u *User) ConfirmEmail(email, emailHash string) bool {
 	if u.Email == email && string(*u.EmailHash) == emailHash {
 		u.EmailConfirm = true
@@ -35,6 +37,7 @@ func (u *User) ConfirmEmail(email, emailHash string) bool {
 	return u.EmailConfirm
 }
 
+// RevokeEmail ...
 func (u *User) RevokeEmail(email, emailHash string) {
 	if email != "" {
 		u.Email = email
@@ -43,24 +46,29 @@ func (u *User) RevokeEmail(email, emailHash string) {
 	u.EmailConfirm = false
 }
 
+// Validate ...
 func (u *User) Validate() bool {
 	return u.AccountName != "" && u.ID == 0 &&
 		u.Email != "" && u.EmailHash != nil && *u.EmailHash != "" &&
-		u.EmailConfirm == false && u.OTPConfirm == false
+		!u.EmailConfirm && !u.OTPConfirm
 }
 
+// NeedRegister ...
 func (u *User) NeedRegister() bool {
 	return u.EmailConfirm && u.OTPConfirm && !u.Registered
 }
 
+// NeedUnregister ...
 func (u *User) NeedUnregister() bool {
 	return !(u.EmailConfirm && u.OTPConfirm) && u.Registered
 }
 
+// UpdateRegister ...
 func (u *User) UpdateRegister() {
 	u.Registered = !u.Registered
 }
 
+// GenerateOTPKey ...
 func (u *User) GenerateOTPKey() (string, error) {
 	if u.OTPKey != "" {
 		return "", fmt.Errorf("Already exists OTP Key [%s]", u.AccountName)
@@ -76,12 +84,13 @@ func (u *User) GenerateOTPKey() (string, error) {
 	return u.OTPKey, nil
 }
 
+// RemoveOTPKey ...
 func (u *User) RemoveOTPKey() {
 	u.OTPKey = ""
 	u.OTPConfirm = false
-	return
 }
 
+// ValidateOTP ...
 func (u *User) ValidateOTP(code string) (ok bool) {
 	if u.OTPKey == "" {
 		return false

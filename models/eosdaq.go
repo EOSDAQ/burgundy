@@ -30,9 +30,18 @@ func init() {
 	for _, a := range accounts {
 		eossysAccount[a] = struct{}{}
 	}
-	quantPattern, _ = regexp.Compile("(\\d+\\.\\d{4}) ([A-Z]+)")
+	quantPattern, _ = regexp.Compile(`(\d+\.\d{4}) ([A-Z]+)`)
 }
 
+func parseEosFloat(str string) (uint64, error) {
+	val, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return uint64(0), err
+	}
+	return uint64(val*100000) / 10, nil
+}
+
+// Token ...
 type Token struct {
 	ID              uint   `json:"id" gorm:"primary_key"`
 	Name            string `json:"name"`
@@ -45,6 +54,7 @@ type Token struct {
 	Volume          uint64 `json:"volume"`
 }
 
+// TokenInit ...
 func TokenInit(baseSymbol string) []*Token {
 	tokens := []*Token{
 		&Token{Name: "Everipedia", Symbol: "IQ", Account: "everipediaiq"},
@@ -121,6 +131,7 @@ type OrderBook struct {
 	*EOSData
 }
 
+// GetArgs ...
 func (ob *OrderBook) GetArgs() []interface{} {
 	return []interface{}{
 		ob.ID,
@@ -134,10 +145,12 @@ func (ob *OrderBook) GetArgs() []interface{} {
 	}
 }
 
+// UnixTime ...
 type UnixTime struct {
 	time.Time
 }
 
+// UnmarshalJSON ...
 func (ut *UnixTime) UnmarshalJSON(data []byte) (err error) {
 	strData := strings.Trim(string(data), "\"")
 	if strData == "" {
@@ -153,6 +166,7 @@ func (ut *UnixTime) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
+// OrderData ...
 type OrderData struct {
 	ID        uint     `json:"id"`
 	Name      string   `json:"name"`
@@ -167,7 +181,7 @@ func parseQuantity(quantity string) (vol uint64, sym string, err error) {
 		mlog.Errorw("parseQuantity", "quantity", quantity, "err", "Invalid Quantity Format")
 		return 0, "", errors.NotValidf("Invalid Quantity Format")
 	}
-	vol, err = util.ParseEosFloat(matched[0][1])
+	vol, err = parseEosFloat(matched[0][1])
 	if err != nil {
 		mlog.Errorw("parseQuantity", "quantity", quantity, "err", "Invalid Float Format")
 		return 0, "", errors.NotValidf("Invalid Float Format")
@@ -177,6 +191,7 @@ func parseQuantity(quantity string) (vol uint64, sym string, err error) {
 	return vol, sym, nil
 }
 
+// Parse ...
 func (od *OrderData) Parse(symbol string, orderType OrderType) (r *OrderBook) {
 
 	r = &OrderBook{
@@ -199,6 +214,7 @@ func (od *OrderData) Parse(symbol string, orderType OrderType) (r *OrderBook) {
 	return r
 }
 
+// ContractData ...
 type ContractData struct {
 	From     string `json:"from"`
 	To       string `json:"to"`
@@ -206,6 +222,7 @@ type ContractData struct {
 	Memo     string `json:"memo"`
 }
 
+// MarshalData ...
 func (cd *ContractData) MarshalData(data interface{}) (r *EOSData) {
 	src, ok := data.(map[string]interface{})
 	if !ok {
@@ -224,6 +241,7 @@ func (cd *ContractData) MarshalData(data interface{}) (r *EOSData) {
 	return cd.Parse()
 }
 
+// Parse ...
 func (cd *ContractData) Parse() (r *EOSData) {
 
 	var ok bool
@@ -241,7 +259,7 @@ func (cd *ContractData) Parse() (r *EOSData) {
 
 	var err error
 	r = &EOSData{AccountName: cd.To, Type: MATCH}
-	r.Price, err = util.ParseEosFloat(memos[1])
+	r.Price, err = parseEosFloat(memos[1])
 	if err != nil {
 		mlog.Infow("ContractData Parse", "data", cd, "err", err)
 		return nil
@@ -255,7 +273,7 @@ func (cd *ContractData) Parse() (r *EOSData) {
 	return r
 }
 
-// EosdaqTX ...
+// EosdaqTx ...
 type EosdaqTx struct {
 	TXID          uint      `gorm:"primary_key"`
 	ID            int64     `json:"account_action_seq"`
@@ -266,6 +284,7 @@ type EosdaqTx struct {
 	*EOSData
 }
 
+// EOSData ...
 type EOSData struct {
 	// for Backend DB
 	AccountName string
@@ -275,6 +294,7 @@ type EOSData struct {
 	Type        OrderType
 }
 
+// GetArgs ...
 func (et *EosdaqTx) GetArgs() []interface{} {
 	return []interface{}{
 		et.ID,
@@ -289,6 +309,7 @@ func (et *EosdaqTx) GetArgs() []interface{} {
 	}
 }
 
+// GetVolume ...
 func (et *EosdaqTx) GetVolume(tokenSymbol string) (r uint64) {
 	if et.Symbol == tokenSymbol {
 		return et.Volume
